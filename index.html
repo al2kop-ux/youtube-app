@@ -195,8 +195,7 @@
 
         // Gemini API Configuration
         const apiKey = ""; // API key is handled by the environment
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
-
+        const apiUrl = `/.netlify/functions/generate`;
         // The System Instruction based on your first prompt
         const systemPrompt = `
 You are a professional YouTube scriptwriter. Your task is to generate a detailed YouTube script outline based on the user's topic and provided source material. You MUST format your response in clean, semantic HTML.
@@ -291,12 +290,11 @@ You must use the provided Video Topic and Source Material to fill in all the bra
             ${sourceMaterial.trim() ? sourceMaterial : "No source material provided. Please generate the outline based on the topic alone."}
             `;
 
-            const payload = {
-                contents: [{ parts: [{ text: userQuery }] }],
-                systemInstruction: {
-                    parts: [{ text: systemPrompt }]
-                },
-            };
+           // You will replace the block above with this new one:
+const payload = {
+    topic: topic,
+    sourceMaterial: sourceMaterial
+};
 
             try {
                 const response = await fetch(apiUrl, {
@@ -387,4 +385,5 @@ You must use the provided Video Topic and Source Material to fill in all the bra
     </script>
 </body>
 </html>
+
 
