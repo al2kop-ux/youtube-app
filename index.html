@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-gray-900">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Script Outline Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Added styles for rich text output */
+        #outputDiv h2 {
+            font-size: 1.5rem; /* 24px */
+            font-weight: 600;
+            color: white;
+            margin-top: 1.5rem;
+            margin-bottom: 0.75rem;
+            border-bottom: 1px solid #4b5563; /* gray-600 */
+            padding-bottom: 0.5rem;
+        }
+        #outputDiv h2:first-child {
+            margin-top: 0;
+        }
+        #outputDiv h3 {
+            font-size: 1.25rem; /* 20px */
+            font-weight: 600;
+            color: #d1d5db; /* gray-300 */
+            margin-top: 1.25rem;
+            margin-bottom: 0.5rem;
+        }
+        #outputDiv p {
+            margin-bottom: 1rem;
+            line-height: 1.6;
+        }
+        #outputDiv ul {
+            list-style-type: disc;
+            padding-left: 2rem;
+            margin-bottom: 1rem;
+        }
+        #outputDiv li {
+            margin-bottom: 0.5rem;
+        }
+        #outputDiv strong {
+            color: #93c5fd; /* blue-300 */
+            font-weight: 600;
+        }
+        #outputDiv em, #outputDiv i {
+            color: #a5b4fc; /* indigo-300 */
+            font-style: italic;
+        }
+    </style>
+</head>
+<body class="h-full text-gray-200">
+    <div class="flex flex-col md:flex-row h-full">
+
+        <!-- Left Column: Inputs -->
+        <div class="w-full md:w-1/2 p-6 md:p-8 bg-gray-800 flex flex-col h-full overflow-y-auto">
+            <header class="mb-6">
+                <h1 class="text-3xl font-bold text-white mb-2">YouTube Script Outline Generator</h1>
+                <p class="text-lg text-gray-400">Enter your topic and source material to generate a script outline in the required format.</p>
+            </header>
+
+            <!-- Input Fields -->
+            <div class="flex-grow flex flex-col space-y-6">
+                <div>
+                    <label for="topicInput" class="block text-sm font-medium text-gray-300 mb-2">Video Topic</label>
+                    <input type="text" id="topicInput" class="w-full bg-gray-700 border border-gray-600 rounded-lg p-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" placeholder="e.g., Best POS systems for small business">
+                </div>
+
+                <div class="space-y-2">
+                    <label class="block text-sm font-medium text-gray-300">Source Material / Transcripts</label>
+                    <details class="bg-gray-700 rounded-lg p-2 cursor-pointer">
+                        <summary class="text-sm font-medium text-gray-400 hover:text-white">
+                            How to get a YouTube Transcript
+                        </summary>
+                        <ol class="list-decimal list-inside text-gray-300 mt-2 space-y-1 text-sm pl-2">
+                            <li>Go to the YouTube video.</li>
+                            <li>Click the "..." (More) button below the video player.</li>
+                            <li>Select "Show transcript" from the menu.</li>
+                            <li>Copy the transcript text and paste it into one of the boxes below.</li>
+                        </ol>
+                    </details>
+                </div>
+
+                <div class="flex-grow flex flex-col space-y-4">
+                    <div class="flex-grow flex flex-col">
+                        <label for="sourceInput1" class="block text-xs font-medium text-gray-400 mb-1">Transcript / Source 1</label>
+                        <textarea id="sourceInput1" class="w-full h-full flex-grow bg-gray-700 border border-gray-600 rounded-lg p-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" style="min-height: 150px;" placeholder="Paste your first transcript or notes here..."></textarea>
+                    </div>
+                    <div class="flex-grow flex flex-col">
+                        <label for="sourceInput2" class="block text-xs font-medium text-gray-400 mb-1">Transcript / Source 2 (Optional)</label>
+                        <textarea id="sourceInput2" class="w-full h-full flex-grow bg-gray-700 border border-gray-600 rounded-lg p-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" style="min-height: 150px;" placeholder="Paste your second transcript or notes here..."></textarea>
+                    </div>
+                    <div class="flex-grow flex flex-col">
+                        <label for="sourceInput3" class="block text-xs font-medium text-gray-400 mb-1">Transcript / Source 3 (Optional)</label>
+                        <textarea id="sourceInput3" class="w-full h-full flex-grow bg-gray-700 border border-gray-600 rounded-lg p-3 text-white placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition" style="min-height: 150px;" placeholder="Paste your third transcript or notes here..."></textarea>
+                    </div>
+                </div>
+
+                <button id="generateButton" class="w-full bg-blue-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-blue-700 transition duration-300 ease-in-out flex items-center justify-center space-x-2 disabled:bg-gray-500">
+                    <span>Generate Outline</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Right Column: Output -->
+        <div class="w-full md:w-1/2 p-6 md:p-8 bg-gray-900 h-full flex flex-col">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-semibold text-white">Generated Outline</h2>
+                <button id="copyButton" class="bg-gray-700 text-gray-300 font-medium py-2 px-4 rounded-lg hover:bg-gray-600 transition duration-300 ease-in-out hidden">
+                    Copy to Clipboard
+                </button>
+            </div>
+
+            <!-- Loading Spinner -->
+            <div id="loader" class="flex-grow flex items-center justify-center hidden">
+                <div class="loader"></div>
+            </div>
+
+            <!-- Output Area -->
+            <div id="outputContainer" class="flex-grow h-full overflow-y-auto bg-gray-800 rounded-lg p-6 border border-gray-700 hidden">
+                <div id="outputDiv" class="text-white w-full">
+                    <!-- Generated content will appear here -->
+                </div>
+            </div>
+            
+            <!-- Placeholder -->
+            <div id="placeholder" class="flex-grow flex items-center justify-center h-full bg-gray-800 rounded-lg border border-gray-700 border-dashed">
+                <p class="text-gray-500">Your script outline will appear here...</p>
+            </div>
+            
+            <!-- Error Message -->
+            <div id="errorBox" class="mt-4 p-4 bg-red-900 border border-red-700 text-red-200 rounded-lg hidden">
+                <strong>Error:</strong> <span id="errorMessage"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden textarea for copy functionality - NO LONGER NEEDED -->
+    <!-- <textarea id="copyHelper" style="position: absolute; left: -9999px;"></textarea> -->
+
+    <script>
+        const topicInput = document.getElementById('topicInput');
+        const sourceInput1 = document.getElementById('sourceInput1');
+        const sourceInput2 = document.getElementById('sourceInput2');
+        const sourceInput3 = document.getElementById('sourceInput3');
+        const generateButton = document.getElementById('generateButton');
+        const outputContainer = document.getElementById('outputContainer');
+        const outputDiv = document.getElementById('outputDiv');
+        const loader = document.getElementById('loader');
+        const placeholder = document.getElementById('placeholder');
+        const copyButton = document.getElementById('copyButton');
+        // const copyHelper = document.getElementById('copyHelper'); // No longer needed
+        const errorBox = document.getElementById('errorBox');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // --- NEW: Load from localStorage on page load ---
+        window.addEventListener('DOMContentLoaded', () => {
+            // Load inputs
+            topicInput.value = localStorage.getItem('ytGenerator_topic') || '';
+            sourceInput1.value = localStorage.getItem('ytGenerator_source1') || '';
+            sourceInput2.value = localStorage.getItem('ytGenerator_source2') || '';
+            sourceInput3.value = localStorage.getItem('ytGenerator_source3') || '';
+
+            // Load output
+            const savedOutput = localStorage.getItem('ytGenerator_output');
+            if (savedOutput) {
+                outputDiv.innerHTML = savedOutput;
+                outputContainer.classList.remove('hidden');
+                copyButton.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+            }
+        });
+
+        // --- NEW: Save inputs to localStorage as user types ---
+        topicInput.addEventListener('input', () => localStorage.setItem('ytGenerator_topic', topicInput.value));
+        sourceInput1.addEventListener('input', () => localStorage.setItem('ytGenerator_source1', sourceInput1.value));
+        sourceInput2.addEventListener('input', () => localStorage.setItem('ytGenerator_source2', sourceInput2.value));
+        sourceInput3.addEventListener('input', () => localStorage.setItem('ytGenerator_source3', sourceInput3.value));
+
+        // Gemini API Configuration
+        const apiKey = ""; // API key is handled by the environment
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+
+        // The System Instruction based on your first prompt
+        const systemPrompt = `
+You are a professional YouTube scriptwriter. Your task is to generate a detailed YouTube script outline based on the user's topic and provided source material. You MUST format your response in clean, semantic HTML.
+
+- Use <h2> for main sections (Hook, Trust Introduction, Body, etc.).
+- Use <h3> for sub-sections (e.g., Section 1, Part 1, Step 2a).
+- Use <p> for paragraphs.
+- Use <ul> and <li> for bullet points.
+- Use <strong> for emphasis on things like 'DO:', 'DON’T:', and 'Visuals:'.
+- Use <em> or <i> for italicized notes like *Add b-roll...*.
+
+Your response should look like this example:
+
+<div>
+    <h2>Hook - (First 15-30 seconds)</h2>
+    <p><strong>Example Hook:</strong> [Generate a compelling 15-30 second hook here based on the topic and source material.]</p>
+    <ul>
+        <li><strong>DO:</strong> [Specific, compelling action for the hook]</li>
+        <li><strong>DON’T:</strong> [Specific common mistake to avoid for this topic]</li>
+    </ul>
+
+    <h2>Trust Introduction - (15-30 seconds)</h2>
+    <p>[One or two sentences to build authority, with a cue for b-roll.]</p>
+    <p><em>*Add some b-roll footage of [relevant b-roll] during the [relevant phrase] section.*</em></p>
+
+    <h2>Body (Main Content)</h2>
+
+    <h3>Section 1: [Title of Section 1] (~ 60-120 seconds approx)</h3>
+    <p>[Brief overview of points in this section. Break down complex info from source material into digestible bullet points.]</p>
+    <p><strong>Visuals:</strong> [Minimalistic text or b-roll suggestion]</p>
+
+    <h3>Section 2: [Title of Section 2] (~ 3-4 minutes approx)</h3>
+    <p>[Short intro to the section.]</p>
+    <p><strong>Visuals:</strong> [Minimalistic visual, e.g., text card with steps]</p>
+
+    <h3>Section 2a: Step #1 [Title of Step 1] (~ 15-25 seconds approx)</h3>
+    <p>[Explanation of this step, based on source material.]</p>
+    <p><strong>Visuals:</strong> [Minimalistic visual]</p>
+    <p><strong>Notes:</strong> [Any relevant tips, like in the original template]</p>
+
+    <h3>[Continue with more steps as needed...]</h3>
+
+    <h2>Notes (For the Team to Add)</h2>
+    <ul>
+        <li>Idea #1</li>
+        <li>Idea #2</li>
+        <li>Idea #3</li>
+    </ul>
+
+    <h2>Additional Notes</h2>
+    <ul>
+        <li><strong>Visual Engagement:</strong> [Simple visual advice]</li>
+        <li><strong>Timing:</strong> [Advice on timing]</li>
+        <li><strong>Hooks & Retention:</strong> [Advice on internal hooks]</li>
+    </ul>
+    
+    <h2>Mid CTA</h2>
+    <p>[A relevant CTA, e.g., "Enjoying this so far? Hit subscribe..."]</p>
+
+    <h2>End CTA</h2>
+    <p>[A relevant End CTA, e.g., "Add this video to your ending card: [suggest a follow-up video topic]"]</p>
+    <p><em>[Action cue, e.g., "Point with fingers..."]</em></p>
+</div>
+
+You must use the provided Video Topic and Source Material to fill in all the bracketed [] content. Be thorough and creative.
+        `;
+
+        generateButton.addEventListener('click', async () => {
+            const topic = topicInput.value;
+            
+            // Combine all source inputs
+            const sources = [sourceInput1.value, sourceInput2.value, sourceInput3.value];
+            const sourceMaterial = sources.filter(Boolean).join('\n\n---\n\n'); // Join non-empty inputs with a separator
+
+            if (!topic) {
+                showError("Please enter a Video Topic.");
+                return;
+            }
+
+            // Show loading state
+            loader.classList.remove('hidden');
+            placeholder.classList.add('hidden');
+            outputContainer.classList.add('hidden');
+            copyButton.classList.add('hidden');
+            generateButton.disabled = true;
+            generateButton.querySelector('span').textContent = 'Generating...';
+            errorBox.classList.add('hidden');
+
+            const userQuery = `
+            Video Topic: ${topic}
+            Source Material / Transcripts:
+            ${sourceMaterial.trim() ? sourceMaterial : "No source material provided. Please generate the outline based on the topic alone."}
+            `;
+
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorBody = await response.text();
+                    throw new Error(`API Error ${response.status}: ${errorBody}`);
+                }
+
+                const result = await response.json();
+                
+                if (result.candidates && result.candidates.length > 0) {
+                    const text = result.candidates[0].content.parts[0].text;
+                    outputDiv.innerHTML = text; // Use innerHTML to render HTML tags
+
+                    // --- NEW: Save output to localStorage ---
+                    localStorage.setItem('ytGenerator_output', text);
+
+                    outputContainer.classList.remove('hidden');
+                    copyButton.classList.remove('hidden');
+                } else {
+                    throw new Error("No valid response from API.");
+                }
+
+            } catch (err) {
+                console.error(err);
+                showError(err.message || "An unknown error occurred.");
+                placeholder.classList.remove('hidden'); // Show placeholder again on error
+            } finally {
+                // Reset loading state
+                loader.classList.add('hidden');
+                generateButton.disabled = false;
+                generateButton.querySelector('span').textContent = 'Generate Outline';
+            }
+        });
+
+        copyButton.addEventListener('click', () => {
+            // 1. Create a temporary element
+            const tempDiv = document.createElement('div');
+            
+            // 2. Set its content to the rich text HTML
+            tempDiv.innerHTML = outputDiv.innerHTML;
+        
+            // 3. Apply a default, "pastable" style (no background, black text)
+            // This is important so it doesn't paste as white text
+            tempDiv.style.position = 'absolute';
+            tempDiv.style.left = '-9999px';
+            tempDiv.style.color = '#000000'; // Set text to black
+            tempDiv.style.backgroundColor = '#FFFFFF'; // Set bg to white
+            
+            // 4. Add it to the DOM
+            document.body.appendChild(tempDiv);
+        
+            // 5. Select the content of the temporary element
+            const range = document.createRange();
+            range.selectNodeContents(tempDiv);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+        
+            // 6. Copy to clipboard
+            try {
+                document.execCommand('copy');
+                copyButton.textContent = 'Copied!';
+            } catch (err) {
+                console.error('Failed to copy rich text: ', err);
+                copyButton.textContent = 'Copy Failed';
+            }
+        
+            // 7. Clean up
+            selection.removeAllRanges();
+            document.body.removeChild(tempDiv);
+        
+            setTimeout(() => {
+                copyButton.textContent = 'Copy to Clipboard';
+            }, 2000);
+        });
+        
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorBox.classList.remove('hidden');
+        }
+
+    </script>
+</body>
+</html>
+
