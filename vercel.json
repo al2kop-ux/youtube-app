@@ -1,7 +1,9 @@
 {
-  "functions": {
-    "netlify/functions/**/*.js": {
-      "runtime": "nodejs18.x"
+  "builds": [
+    {
+      "src": "netlify/functions/**/*.js",
+      "use": "@vercel/node"
     }
-  }
+  ]
 }
+
