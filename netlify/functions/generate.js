@@ -8,7 +8,8 @@ const fetchTranscript = async (url) => {
     try {
         // === UPDATED 2-STEP LOGIC ===
         // 1. Get a list of all available transcripts (including auto-generated)
-        const transcriptsList = await YoutubeTranscript.listTranscripts(url);
+        // **** FIX: Changed listTranscripts to getTranscriptsList ****
+        const transcriptsList = await YoutubeTranscript.getTranscriptsList(url);
         if (!transcriptsList || transcriptsList.length === 0) {
             return `[No transcripts available for ${url}]`;
         }
@@ -22,7 +23,18 @@ const fetchTranscript = async (url) => {
 
     } catch (error) {
         console.warn(`Could not fetch transcript for ${url}: ${error.message}`);
-        return `[Transcript for ${url} failed to load: ${error.message}]`; // Return an error message
+        // Send back a more detailed error message
+        let userMessage = error.message;
+         if (error.message.includes("transcripts are disabled")) {
+            userMessage = "Transcripts are disabled for this video.";
+        } else if (error.message.includes("No transcripts available")) {
+            userMessage = "This video doesn't have any transcripts available.";
+        } else if (error.message.includes("private")) {
+            userMessage = "This video is private or unavailable.";
+        } else if (error.message.includes("404")) {
+            userMessage = "This video could not be found (404 Error).";
+        }
+        return `[Transcript for ${url} failed: ${userMessage}]`;
     }
 };
 
