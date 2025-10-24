@@ -2,24 +2,26 @@
 // It uses the built-in 'fetch', so it has no special dependencies.
 
 exports.handler = async (event) => {
-    // 1. Get the search query from the app
-    const { query } = JSON.parse(event.body);
-
-    // 2. Get your *YouTube* API key from environment variables
-    const apiKey = process.env.YOUTUBE_API_KEY;
-
-    if (!apiKey) {
-        return {
-            statusCode: 500,
-            body: JSON.stringify({ error: 'YouTube API key is not set.' })
-        };
-    }
-
-    // 3. Construct the API URL
-    const maxResults = 10;
-    const apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=${maxResults}&key=${apiKey}`;
-
+    // Top-level try...catch to ensure a JSON response is always sent
     try {
+        // 1. Get the search query from the app
+        const { query } = JSON.parse(event.body);
+
+        // 2. Get your *YouTube* API key from environment variables
+        const apiKey = process.env.YOUTUBE_API_KEY;
+
+        if (!apiKey) {
+            return {
+                statusCode: 500,
+                body: JSON.stringify({ error: 'YouTube API key is not set.' })
+            };
+        }
+
+        // 3. Construct the API URL
+        const maxResults = 10;
+        const apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=${maxResults}&key=${apiKey}`;
+
+        
         // 4. Call the YouTube Data API
         const response = await fetch(apiUrl);
         const data = await response.json();
@@ -58,7 +60,7 @@ exports.handler = async (event) => {
         
         return {
             statusCode: 500,
-            body: JSON.stringify({ error: errorMessage })
+            body: JSON.stringify({ error: `[Search Function Error]: ${errorMessage}` })
         };
     }
 };
