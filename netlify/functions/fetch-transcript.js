@@ -26,13 +26,20 @@ exports.handler = async (event) => {
         };
 
     } catch (error) {
-        console.error(error);
-        let errorMessage = "Could not fetch transcript.";
-        // Send a more specific error message back to the user
-        if (error.message.includes("transcripts available")) {
-            errorMessage = "This video doesn't have any transcripts available.";
+        console.error(error); // Log the full error on the server
+        
+        // Send the specific error message from the library back to the user
+        let errorMessage = error.message || "An unknown error occurred while fetching the transcript.";
+
+        // Make the error messages more user-friendly
+        if (error.message.includes("transcripts are disabled")) {
+            errorMessage = "Transcripts are disabled for this video.";
+        } else if (error.message.includes("No transcripts available")) {
+             errorMessage = "This video doesn't have any transcripts available.";
         } else if (error.message.includes("private")) {
             errorMessage = "This video is private or unavailable.";
+        } else if (error.message.includes("404")) {
+            errorMessage = "This video could not be found (404 Error)."
         }
         
         return {
