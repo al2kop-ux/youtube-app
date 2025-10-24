@@ -1,34 +1,25 @@
 const { YoutubeTranscript } = require('youtube-transcript');
 
 exports.handler = async (event) => {
-    // 1. Get the URL from the request
-    if (event.httpMethod !== 'POST') {
-        return { statusCode: 405, body: JSON.stringify({ error: 'Method Not Allowed' }) };
+    const { url } = JSON.parse(event.body);
+    if (!url) {
+        return { statusCode: 400, body: JSON.stringify({ error: 'No URL provided' }) };
     }
 
-    let url;
     try {
-        const body = JSON.parse(event.body);
-        url = body.url;
-        if (!url) {
-            throw new Error('No URL provided');
+        // === UPDATED 2-STEP LOGIC ===
+        // 1. Get a list of all available transcripts (including auto-generated)
+        const transcriptsList = await YoutubeTranscript.listTranscripts(url);
+        if (!transcriptsList || transcriptsList.length === 0) {
+            throw new Error("This video doesn't have any transcripts available.");
         }
-    } catch (e) {
-        return { statusCode: 400, body: JSON.stringify({ error: 'Invalid request: No URL provided' }) };
-    }
 
-    // 2. Fetch the transcript
-    try {
-        const transcriptItems = await YoutubeTranscript.fetchTranscript(url);
+        // 2. Fetch the first transcript from the list
+        const transcriptItems = await transcriptsList[0].fetch();
+        // === END OF UPDATE ===
         
-        if (!transcriptItems || transcriptItems.length === 0) {
-            return { statusCode: 404, body: JSON.stringify({ error: 'No transcript found for this video. It might be disabled.' }) };
-        }
-        
-        // 3. Combine the text
         const transcriptText = transcriptItems.map(item => item.text).join(' ');
-
-        // 4. Send it back
+        
         return {
             statusCode: 200,
             body: JSON.stringify({ transcript: transcriptText })
@@ -36,13 +27,18 @@ exports.handler = async (event) => {
 
     } catch (error) {
         console.error(error);
-        // Handle common error from the library
-        if (error.message.includes('subtitles disabled')) {
-             return { statusCode: 404, body: JSON.stringify({ error: 'Transcripts are disabled for this video.' }) };
+        let errorMessage = "Could not fetch transcript.";
+        // Send a more specific error message back to the user
+        if (error.message.includes("transcripts available")) {
+            errorMessage = "This video doesn't have any transcripts available.";
+        } else if (error.message.includes("private")) {
+            errorMessage = "This video is private or unavailable.";
         }
+        
         return {
             statusCode: 500,
-            body: JSON.stringify({ error: 'Failed to fetch transcript. ' + error.message })
+            body: JSON.stringify({ error: errorMessage })
         };
     }
 };
+
