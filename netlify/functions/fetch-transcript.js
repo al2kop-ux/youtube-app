@@ -7,17 +7,15 @@ exports.handler = async (event) => {
     }
 
     try {
-        // === UPDATED 2-STEP LOGIC ===
-        // 1. Get a list of all available transcripts (including auto-generated)
-        // **** FIX: Changed listTranscripts to getTranscriptsList ****
-        const transcriptsList = await YoutubeTranscript.getTranscriptsList(url);
-        if (!transcriptsList || transcriptsList.length === 0) {
+        // === FIX ===
+        // Reverted to the correct and standard .fetch() method.
+        // This method handles finding available transcripts (including auto-generated).
+        const transcriptItems = await YoutubeTranscript.fetch(url);
+        // === END OF FIX ===
+        
+        if (!transcriptItems || transcriptItems.length === 0) {
             throw new Error("This video doesn't have any transcripts available.");
         }
-
-        // 2. Fetch the first transcript from the list
-        const transcriptItems = await transcriptsList[0].fetch();
-        // === END OF UPDATE ===
         
         const transcriptText = transcriptItems.map(item => item.text).join(' ');
         
