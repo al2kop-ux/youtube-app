@@ -4,6 +4,12 @@
       "src": "netlify/functions/**/*.js",
       "use": "@vercel/node"
     }
+  ],
+  "rewrites": [
+    {
+      "source": "/.netlify/functions/:path*",
+      "destination": "/netlify/functions/:path*"
+    }
   ]
 }
 
