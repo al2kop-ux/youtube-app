@@ -6,9 +6,20 @@ const fetchTranscript = async (url) => {
         return ""; // Return empty string if URL is empty
     }
     try {
-        const transcriptItems = await YoutubeTranscript.fetchTranscript(url);
+        // === UPDATED 2-STEP LOGIC ===
+        // 1. Get a list of all available transcripts (including auto-generated)
+        const transcriptsList = await YoutubeTranscript.listTranscripts(url);
+        if (!transcriptsList || transcriptsList.length === 0) {
+            return `[No transcripts available for ${url}]`;
+        }
+
+        // 2. Fetch the first transcript from the list
+        const transcriptItems = await transcriptsList[0].fetch();
+        // === END OF UPDATE ===
+
         if (!transcriptItems) return "";
         return transcriptItems.map(item => item.text).join(' ');
+
     } catch (error) {
         console.warn(`Could not fetch transcript for ${url}: ${error.message}`);
         return `[Transcript for ${url} failed to load: ${error.message}]`; // Return an error message
