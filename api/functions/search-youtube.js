@@ -1,50 +1,65 @@
-// This function securely calls the YouTube Data API
+// This is the serverless function for YouTube Search
+// It uses the built-in 'fetch', so it has no special dependencies.
+
 exports.handler = async (event) => {
     // 1. Get the search query from the app
     const { query } = JSON.parse(event.body);
-    if (!query) {
-        return { statusCode: 400, body: JSON.stringify({ error: 'No search query provided' }) };
-    }
 
-    // 2. Get your *new* YouTube API key from Netlify's settings
+    // 2. Get your *YouTube* API key from environment variables
     const apiKey = process.env.YOUTUBE_API_KEY;
+
     if (!apiKey) {
-        return { statusCode: 500, body: JSON.stringify({ error: 'YouTube API key is not configured' }) };
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ error: 'YouTube API key is not set.' })
+        };
     }
 
-    // 3. Call the YouTube Search API
-    const maxResults = 5;
+    // 3. Construct the API URL
+    const maxResults = 10;
     const apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=${maxResults}&key=${apiKey}`;
 
     try {
+        // 4. Call the YouTube Data API
         const response = await fetch(apiUrl);
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(`YouTube API Error: ${errorData.error.message}`);
-        }
-
         const data = await response.json();
 
-        // 4. Format the results to be simple and clean
+        if (!response.ok) {
+            throw new Error(data.error.message || 'Failed to fetch from YouTube API');
+        }
+
+        // 5. Format the results for our app
         const videos = data.items.map(item => ({
             videoId: item.id.videoId,
             title: item.snippet.title,
             channel: item.snippet.channelTitle,
-            thumbnail: item.snippet.thumbnails.default.url,
-            url: `https://www.youtube.com/watch?v=${item.id.videoId}`
+            thumbnail: item.snippet.thumbnails.default.url
         }));
 
-        // 5. Send the list of videos back to the app
+        // 6. Send the results back to the app
         return {
             statusCode: 200,
-            body: JSON.stringify({ videos })
+            body: JSON.stringify({ videos: videos })
         };
 
     } catch (error) {
-        console.error(error);
+        let errorMessage = "An unknown error occurred";
+        if (error instanceof Error) {
+            errorMessage = error.message;
+        } else if (typeof error === 'string') {
+            errorMessage = error;
+        } else {
+            try {
+                errorMessage = JSON.stringify(error);
+            } catch (e) {
+                errorMessage = "An un-stringifiable error object was caught.";
+            }
+        }
+        
         return {
             statusCode: 500,
-            body: JSON.stringify({ error: error.message })
+            body: JSON.stringify({ error: errorMessage })
         };
     }
 };
+
