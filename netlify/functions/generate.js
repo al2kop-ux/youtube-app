@@ -6,19 +6,15 @@ const fetchTranscript = async (url) => {
         return ""; // Return empty string if URL is empty
     }
     try {
-        // === UPDATED 2-STEP LOGIC ===
-        // 1. Get a list of all available transcripts (including auto-generated)
-        // **** FIX: Changed listTranscripts to getTranscriptsList ****
-        const transcriptsList = await YoutubeTranscript.getTranscriptsList(url);
-        if (!transcriptsList || transcriptsList.length === 0) {
-            return `[No transcripts available for ${url}]`;
+        // === FIX ===
+        // Reverted to the correct and standard .fetch() method.
+        // This method handles finding available transcripts (including auto-generated).
+        const transcriptItems = await YoutubeTranscript.fetch(url);
+        // === END OF FIX ===
+
+        if (!transcriptItems || transcriptItems.length === 0) {
+            return `[No transcript items found for ${url}]`;
         }
-
-        // 2. Fetch the first transcript from the list
-        const transcriptItems = await transcriptsList[0].fetch();
-        // === END OF UPDATE ===
-
-        if (!transcriptItems) return "";
         return transcriptItems.map(item => item.text).join(' ');
 
     } catch (error) {
