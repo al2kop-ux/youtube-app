@@ -1,7 +1,11 @@
 {
-  "name": "youtube-app",
+  "name": "youtube-script-generator-functions",
   "version": "1.0.0",
   "dependencies": {
-    "youtube-transcript": "^1.2.1"
+    "youtube-transcript": "^1.0.6"
+  },
+  "engines": {
+    "node": "22.x"
   }
 }
+
