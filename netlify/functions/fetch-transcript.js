@@ -26,25 +26,42 @@ exports.handler = async (event) => {
         };
 
     } catch (error) {
-        console.error(error); // Log the full error on the server
+        console.error("Raw error object:", error); // Log the full error on the server
         
-        // Send the specific error message from the library back to the user
-        let errorMessage = error.message || "An unknown error occurred while fetching the transcript.";
+        let detailedErrorMessage;
 
-        // Make the error messages more user-friendly
-        if (error.message.includes("transcripts are disabled")) {
-            errorMessage = "Transcripts are disabled for this video.";
-        } else if (error.message.includes("No transcripts available")) {
-             errorMessage = "This video doesn't have any transcripts available.";
-        } else if (error.message.includes("private")) {
-            errorMessage = "This video is private or unavailable.";
-        } else if (error.message.includes("404")) {
-            errorMessage = "This video could not be found (404 Error)."
+        if (error instanceof Error) {
+            // It's a standard error object
+            detailedErrorMessage = error.message;
+        } else if (typeof error === 'string') {
+            // The library threw a plain string
+            detailedErrorMessage = error;
+        } else {
+            // It's something else, maybe an object?
+            try {
+                detailedErrorMessage = JSON.stringify(error);
+            } catch (e) {
+                detailedErrorMessage = "An un-stringifiable error occurred.";
+            }
         }
+
+        // Now, try to make it user-friendly, but default to the detailed message
+        let userMessage = detailedErrorMessage;
+        if (detailedErrorMessage.includes("transcripts are disabled")) {
+            userMessage = "Transcripts are disabled for this video.";
+        } else if (detailedErrorMessage.includes("No transcripts available")) {
+            userMessage = "This video doesn't have any transcripts available.";
+        } else if (detailedErrorMessage.includes("private")) {
+            userMessage = "This video is private or unavailable.";
+        } else if (detailedErrorMessage.includes("404")) {
+            userMessage = "This video could not be found (404 Error).";
+        }
+        
+        console.error("Sending back error:", userMessage);
         
         return {
             statusCode: 500,
-            body: JSON.stringify({ error: errorMessage })
+            body: JSON.stringify({ error: userMessage }) // Send the detailed, raw message
         };
     }
 };
