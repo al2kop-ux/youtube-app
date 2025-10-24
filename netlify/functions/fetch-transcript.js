@@ -9,7 +9,8 @@ exports.handler = async (event) => {
     try {
         // === UPDATED 2-STEP LOGIC ===
         // 1. Get a list of all available transcripts (including auto-generated)
-        const transcriptsList = await YoutubeTranscript.listTranscripts(url);
+        // **** FIX: Changed listTranscripts to getTranscriptsList ****
+        const transcriptsList = await YoutubeTranscript.getTranscriptsList(url);
         if (!transcriptsList || transcriptsList.length === 0) {
             throw new Error("This video doesn't have any transcripts available.");
         }
