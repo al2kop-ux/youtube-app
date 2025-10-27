@@ -1,4 +1,4 @@
-const { YoutubeTranscript } = require('youtube-transcript');
+import YoutubeTranscript from 'youtube-transcript';
 
 // Helper to return a JSON error
 function jsonError(message, status = 500) {
@@ -10,46 +10,60 @@ function jsonError(message, status = 500) {
 
 // Helper function to fetch a single transcript
 async function fetchTranscript(url) {
-    // This is the known bug
-    // We are using 'require' at the top level, but 'youtube-transcript' is ESM-only
-    // This will fail at runtime.
-    return YoutubeTranscript.fetch(url);
+    try {
+        const transcriptItems = await YoutubeTranscript.fetch(url);
+        return transcriptItems.map(item => item.text).join(' ');
+    } catch (error) {
+        // We'll just return an error message, not the full transcript
+        return `[Transcript for ${url} failed to load: ${error.message}]`;
+    }
 }
 
-// Cloudflare's native handler for Pages
-export async function onRequest(context) {
-
-    // --- NEW: Manually check for POST method ---
-    if (context.request.method !== 'POST') {
-        return jsonError('Method Not Allowed', 405);
-    }
-    // --- End of new block ---
-
-    try {
-        const { topic, persona, sourceMaterial } = await context.request.json();
-        const { GEMINI_API_KEY } = context.env;
-
-        if (!topic || !persona) {
-            return jsonError('Topic and persona are required', 400);
-        }
-        if (!GEMINI_API_KEY) {
-            return jsonError('Gemini API key is not set', 500);
+// Cloudflare's native ESM handler
+export default {
+    async fetch(request, env, context) {
+        // We only handle POST requests
+        if (request.method !== 'POST') {
+            return jsonError('Method Not Allowed', 405);
         }
 
-        // Persona-based intro logic
-        let trustIntro = "";
-        switch (persona) {
-            case "Michael - Korona":
-                trustIntro = `So hey, I’m Michael… the CMO at KORONA POS. We help thousands of retailers all across the US run smoother, more profitable retail stores — from mom and pop coffee shops to multi-location retail chains. I’ve been in the retail tech game for years, and in this video, I'm about to show you how to solve the problem of "${topic}".`;
-                break;
-            case "Mike - Verticulate":
-                trustIntro = `So hey, I’m Mihkel. I’m the founder at Verticulate. We’ve helped tens of clients globally - from startups all the way to enterprises - eliminate waste in their processes by implementing better systems and workflow automations with AI, saving thousands of hours in the process. In this video, I'm about to show you how to solve the problem of "${topic}".`;
-                break;
-            default:
-                trustIntro = `I'm a generic expert, and in this video, I'm about to show you how to solve the problem of "${topic}".`;
-        }
+        try {
+            const { topic, persona, youtubeUrls } = await request.json();
+            const { GEMINI_API_KEY } = env;
 
-        const systemPrompt = `
+            if (!topic || !persona) {
+                return jsonError('Topic and persona are required', 400);
+            }
+            if (!GEMINI_API_KEY) {
+                return jsonError('Gemini API key is not set', 500);
+            }
+            
+            // --- Fetch Transcripts in Parallel ---
+            let sourceMaterial = "";
+            if (youtubeUrls && youtubeUrls.length > 0) {
+                const transcriptPromises = youtubeUrls
+                    .filter(url => url && url.trim() !== '') // Filter out empty strings
+                    .map(url => fetchTranscript(url));
+                
+                const transcripts = await Promise.all(transcriptPromises);
+                sourceMaterial = transcripts.join('\n\n---\n\n');
+            }
+            // --- End of Transcript Fetching ---
+
+            // Persona-based intro logic
+            let trustIntro = "";
+            switch (persona) {
+                case "Michael - Korona":
+                    trustIntro = `So hey, I’m Michael… the CMO at KORONA POS. We help thousands of retailers all across the US run smoother, more profitable retail stores — from mom and pop coffee shops to multi-location retail chains. I’ve been in the retail tech game for years, and in this video, I'm about to show you how to solve the problem of "${topic}".`;
+                    break;
+                case "Mike - Verticulate":
+                    trustIntro = `So hey, I’m Mihkel. I’m the founder at Verticulate. We’ve helped tens of clients globally - from startups all the way to enterprises - eliminate waste in their processes by implementing better systems and workflow automations with AI, saving thousands of hours in the process. In this video, I'm about to show you how to solve the problem of "${topic}".`;
+                    break;
+                default:
+                    trustIntro = `I'm a generic expert, and in this video, I'm about to show you how to solve the problem of "${topic}".`;
+            }
+
+            const systemPrompt = `
 You are a professional YouTube scriptwriter. Your task is to generate a detailed YouTube script outline based on the user's topic, persona, and provided source material. You MUST format your response in clean, semantic HTML.
 
 - Use <h2> for main sections (Hook, Trust Introduction, Body, etc.).
@@ -114,53 +128,54 @@ Your response should look like this example:
 You must use the provided Video Topic and Source Material to fill in all the bracketed [] content. Be thorough and creative.
     `;
 
-        const userQuery = `
-        Video Topic: ${topic}
-        Source Material / Transcripts:
-        ${sourceMaterial.trim() ? sourceMaterial : "No source material provided. Please generate the outline based on the topic alone."}
-    `;
+            const userQuery = `
+            Video Topic: ${topic}
+            Source Material / Transcripts:
+            ${sourceMaterial.trim() ? sourceMaterial : "No source material provided. Please generate the outline based on the topic alone."}
+        `;
 
-        const payload = {
-            contents: [{ parts: [{ text: userQuery }] }],
-            systemInstruction: {
-                parts: [{ text: systemPrompt }]
-            },
-        };
+            const payload = {
+                contents: [{ parts: [{ text: userQuery }] }],
+                systemInstruction: {
+                    parts: [{ text: systemPrompt }]
+                },
+            };
 
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`;
-        
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${GEMINI_API_KEY}`;
+            
+            const response = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
 
-        if (!response.ok) {
-            let errorText = await response.text();
-            return jsonError(`Gemini API Error: ${errorText}`, response.status);
-        }
-
-        const data = await response.json();
-        
-        return new Response(JSON.stringify(data), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-        });
-
-    } catch (error) {
-        let errorMessage = "An unknown error occurred";
-        if (error instanceof Error) {
-            errorMessage = error.message;
-        } else if (typeof error === 'string') {
-            errorMessage = error;
-        } else {
-            try {
-                errorMessage = JSON.stringify(error);
-            } catch (e) {
-                errorMessage = "An un-stringifiable error object was caught.";
+            if (!response.ok) {
+                let errorText = await response.text();
+                return jsonError(`Gemini API Error: ${errorText}`, response.status);
             }
+
+            const data = await response.json();
+            
+            return new Response(JSON.stringify(data), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' },
+            });
+
+        } catch (error) {
+            let errorMessage = "An unknown error occurred";
+            if (error instanceof Error) {
+                errorMessage = error.message;
+            } else if (typeof error === 'string') {
+                errorMessage = error;
+            } else {
+                try {
+                    errorMessage = JSON.stringify(error);
+                } catch (e) {
+                    errorMessage = "An un-stringifiable error object was caught.";
+                }
+            }
+            return jsonError(`[Generate Function Error]: ${errorMessage}`, 500);
         }
-        return jsonError(`[Generate Function Error]: ${errorMessage}`, 500);
     }
 }
 
