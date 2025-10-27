@@ -25,7 +25,7 @@ export async function onRequestPost(context) {
         const response = await fetch(apiUrl);
 
         if (!response.ok) {
-            // NEW: Send Google's error message directly to the user
+            // Send Google's error message directly to the user
             let googleError = await response.text();
             try {
                 // Try to parse it as JSON for a cleaner message
@@ -40,20 +40,25 @@ export async function onRequestPost(context) {
 
         const data = await response.json();
         
-        // NEW: Check if the response is successful but has no items.
-        // If so, send the raw response back as an error so we can inspect it.
-        if (!data.items || data.items.length === 0) {
-            // If we get no items, it might be a quota issue or just no results.
-            // Let's send the raw response back as an error message for debugging.
-            const rawResponseText = JSON.stringify(data, null, 2);
-            return jsonError(`No items found. Full API Response: ${rawResponseText}`, 404);
+        // --- NEW, STRICTER LOGIC ---
+        // We will now ONLY return a 200 OK if we have items.
+        // Everything else will be treated as an error so we can debug it.
+        
+        if (data.items && data.items.length > 0) {
+            // Success! Send the data back.
+            return new Response(JSON.stringify(data), {
+                status: 200,
+                headers: { 'Content-Type': 'application/json' },
+            });
         }
         
-        // Success! Send the data back.
-        return new Response(JSON.stringify(data), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-        });
+        // --- If we are here, it means we got no items. ---
+        // This will now be treated as an error.
+        
+        // Let's send the raw response back as an error message for debugging.
+        const rawResponseText = JSON.stringify(data, null, 2);
+        return jsonError(`No items found. Full API Response: ${rawResponseText}`, 404);
+        
 
     } catch (error) {
         let errorMessage = "An unknown error occurred";
