@@ -1,17 +1,10 @@
 {
-  "name": "youtube-app-cloudflare",
+  "name": "youtube-script-generator-cf",
   "version": "1.0.0",
-  "private": true,
-  "description": "YouTube Script Generator",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "dependencies": {
-    "youtube-transcript": "^1.2.1"
+    "youtube-transcript": "^1.0.6"
   },
   "engines": {
-    "node": "20.x"
+    "node": "18.x"
   }
 }
-
