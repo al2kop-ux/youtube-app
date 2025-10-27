@@ -217,16 +217,22 @@
 
             if (!response.ok) {
                 let errorMsg = `HTTP error! Status: ${response.status}`;
+                
+                // Clone the response to read it multiple times
+                const resClone = response.clone();
+
                 try {
-                    const errData = await response.json();
+                    // Try to parse error as JSON from the clone
+                    const errData = await resClone.json(); 
                     errorMsg = errData.error || JSON.stringify(errData);
                 } catch (e) {
-                    // Response was not JSON
+                    // If JSON fails, read the original response as text
                     errorMsg = await response.text();
                 }
                 throw new Error(errorMsg);
             }
-            return response.json();
+            // If response is OK, just return JSON
+            return response.json(); 
         }
 
         // --- Generate Button ---
