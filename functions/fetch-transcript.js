@@ -1,4 +1,4 @@
-const { YoutubeTranscript } = require('youtube-transcript');
+const YoutubeTranscript = require('youtube-transcript');
 
 // Helper to return a JSON error
 function jsonError(message, status = 500) {
