@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Script Outline Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .modal { display: none; }
+        .modal-open { display: flex; }
+        #outputDiv h2 { font-size: 1.5rem; font-weight: 600; margin-top: 1.25rem; margin-bottom: 0.5rem; }
+        #outputDiv h3 { font-size: 1.25rem; font-weight: 600; margin-top: 1rem; margin-bottom: 0.25rem; }
+        #outputDiv p { margin-bottom: 0.5rem; }
+        #outputDiv ul { list-style-type: disc; margin-left: 1.5rem; margin-bottom: 0.5rem; }
+        #outputDiv em { font-style: italic; color: #a5b4fc; /* Light indigo */ }
+        .loader { border-top-color: #6366f1; }
+        .search-result-item:hover { background-color: #374151; /* Gray 700 */ }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen p-4 md:p-8">
+
+    <div class="max-w-7xl mx-auto">
+        <h1 class="text-3xl font-bold text-center text-white mb-8">YouTube Script Outline Generator</h1>
+
+        <!-- Error Box -->
+        <div id="errorBox" class="hidden bg-red-800 border border-red-600 text-white p-4 rounded-lg mb-6">
+            <strong class="font-bold">Error:</strong>
+            <span id="errorMessage" class="block">Something went wrong.</span>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+
+            <!-- Left Column: Inputs -->
+            <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                <h2 class="text-2xl font-semibold mb-6 text-white">1. Inputs</h2>
+
+                <!-- Search YouTube -->
+                <div class="mb-6">
+                    <label for="searchInput" class="block text-sm font-medium text-gray-300 mb-2">Search YouTube for inspiration:</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="searchInput" class="flex-grow bg-gray-700 border border-gray-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., 'best pos systems for small business'">
+                        <button id="searchButton" class="bg-indigo-600 text-white font-semibold py-3 px-5 rounded-lg hover:bg-indigo-700 transition duration-200">
+                            Search
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Video Topic -->
+                <div class="mb-4">
+                    <label for="topicInput" class="block text-sm font-medium text-gray-300 mb-2">Video Topic (Required)</label>
+                    <input type="text" id="topicInput" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., 'Best POS Systems for Small Business'">
+                </div>
+                
+                <!-- Persona Dropdown -->
+                <div class="mb-4">
+                    <label for="personaSelect" class="block text-sm font-medium text-gray-300 mb-2">Select Persona</label>
+                    <select id="personaSelect" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="default">Default (Generic Expert)</option>
+                        <option value="korona">Michael - KORONA POS</option>
+                        <option value="verticulate">Mihkel - Verticulate</option>
+                    </select>
+                </div>
+
+                <!-- Source URLs -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">YouTube URLs (Optional)</label>
+                    <p class="text-xs text-gray-400 mb-3">Paste URLs to pull transcripts as source material.</p>
+                    <div class="space-y-3">
+                        <div class="flex gap-2">
+                            <input type="url" id="sourceInput1" class="flex-grow bg-gray-700 border border-gray-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="https://www.youtube.com/watch?v=...">
+                            <button data-target="sourceInput1" class="show-transcript-btn bg-gray-600 text-white font-medium py-3 px-4 rounded-lg hover:bg-gray-500 transition duration-200 text-sm">Show Transcript</button>
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="url" id="sourceInput2" class="flex-grow bg-gray-700 border border-gray-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="https://www.youtube.com/watch?v=...">
+                            <button data-target="sourceInput2" class="show-transcript-btn bg-gray-600 text-white font-medium py-3 px-4 rounded-lg hover:bg-gray-500 transition duration-200 text-sm">Show Transcript</button>
+                        </div>
+                        <div class="flex gap-2">
+                            <input type="url" id="sourceInput3" class="flex-grow bg-gray-700 border border-gray-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="https://www.youtube.com/watch?v=...">
+                            <button data-target="sourceInput3" class="show-transcript-btn bg-gray-600 text-white font-medium py-3 px-4 rounded-lg hover:bg-gray-500 transition duration-200 text-sm">Show Transcript</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Generate Button -->
+                <div class="mt-8">
+                    <button id="generateButton" class="w-full bg-indigo-600 text-white font-bold py-4 px-6 rounded-lg text-lg hover:bg-indigo-700 transition duration-200 flex items-center justify-center">
+                        <span id="btn-text">Generate Outline</span>
+                        <div id="btn-loader" class="hidden loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-6 w-6 ml-3"></div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Column: Output -->
+            <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-semibold text-white">2. Generated Outline</h2>
+                    <button id="copyButton" class="bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-500 transition duration-200">Copy</button>
+                </div>
+                
+                <div id="outputContainer" class="relative bg-gray-900 border border-gray-700 rounded-lg p-6 min-h-[500px] max-h-[70vh] overflow-y-auto">
+                    <!-- Placeholder -->
+                    <div id="placeholder" class="absolute inset-0 flex items-center justify-center text-gray-500">
+                        Your script outline will appear here...
+                    </div>
+                    <!-- Loader -->
+                    <div id="loader" class="hidden absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75">
+                        <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-600 h-24 w-24"></div>
+                    </div>
+                    <!-- Output Content -->
+                    <div id="outputDiv" class="prose prose-invert max-w-none"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Transcript Modal -->
+    <div id="transcriptModal" class="modal fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl">
+            <div class="flex justify-between items-center p-4 border-b border-gray-700">
+                <h3 class="text-lg font-semibold text-white">Transcript</h3>
+                <button id="closeModalBtn" class="text-gray-400 hover:text-white">&times;</button>
+            </div>
+            <div class="p-4">
+                <textarea id="modalTextarea" readonly class="w-full h-64 bg-gray-900 text-gray-300 border border-gray-700 rounded-lg p-3"></textarea>
+            </div>
+            <div class="flex justify-end p-4 border-t border-gray-700">
+                <button id="copyModalBtn" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 transition duration-200">Copy Transcript</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search Modal -->
+    <div id="searchModal" class="modal fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4">
+        <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl">
+            <div class="flex justify-between items-center p-4 border-b border-gray-700">
+                <h3 class="text-lg font-semibold text-white">YouTube Search Results</h3>
+                <button id="closeSearchModalBtn" class="text-gray-400 hover:text-white">&times;</button>
+            </div>
+            <div id="searchModalContent" class="p-4 max-h-[70vh] overflow-y-auto">
+                <!-- Search results will be injected here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- API URLs (Cloudflare Pages) ---
+        const generateApiUrl = `/generate`; 
+        const fetchTranscriptApiUrl = `/fetch-transcript`; 
+        const searchApiUrl = `/search-youtube`;
+
+        // --- Element Selectors ---
+        const topicInput = document.getElementById('topicInput');
+        const personaSelect = document.getElementById('personaSelect');
+        const sourceInput1 = document.getElementById('sourceInput1');
+        const sourceInput2 = document.getElementById('sourceInput2');
+        const sourceInput3 = document.getElementById('sourceInput3');
+        const generateButton = document.getElementById('generateButton');
+        const outputContainer = document.getElementById('outputContainer');
+        const outputDiv = document.getElementById('outputDiv');
+        const loader = document.getElementById('loader');
+        const placeholder = document.getElementById('placeholder');
+        const copyButton = document.getElementById('copyButton');
+        const errorBox = document.getElementById('errorBox');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // Transcript Modal
+        const transcriptModal = document.getElementById('transcriptModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const modalTextarea = document.getElementById('modalTextarea');
+        const copyModalBtn = document.getElementById('copyModalBtn');
+
+        // Search Modal
+        const searchInput = document.getElementById('searchInput');
+        const searchButton = document.getElementById('searchButton');
+        const searchModal = document.getElementById('searchModal');
+        const closeSearchModalBtn = document.getElementById('closeSearchModalBtn');
+        const searchModalContent = document.getElementById('searchModalContent');
+
+        // --- Local Storage ---
+        const inputs = [topicInput, personaSelect, sourceInput1, sourceInput2, sourceInput3, searchInput];
+        inputs.forEach(input => {
+            if (localStorage.getItem(input.id)) {
+                input.value = localStorage.getItem(input.id);
+            }
+            input.addEventListener('input', () => localStorage.setItem(input.id, input.value));
+        });
+
+        if (localStorage.getItem('generatedOutline')) {
+            outputDiv.innerHTML = localStorage.getItem('generatedOutline');
+            placeholder.style.display = 'none';
+        }
+
+        // --- Error Handling ---
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorBox.classList.remove('hidden');
+        }
+        function hideError() {
+            errorBox.classList.add('hidden');
+        }
+
+        // --- API Call Helper ---
+        async function apiFetch(url, body) {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            if (!response.ok) {
+                let errorMsg = `HTTP error! Status: ${response.status}`;
+                try {
+                    const errData = await response.json();
+                    errorMsg = errData.error || JSON.stringify(errData);
+                } catch (e) {
+                    // Response was not JSON
+                    errorMsg = await response.text();
+                }
+                throw new Error(errorMsg);
+            }
+            return response.json();
+        }
+
+        // --- Generate Button ---
+        generateButton.addEventListener('click', async () => {
+            hideError();
+            const topic = topicInput.value;
+            const persona = personaSelect.value;
+            const urls = [sourceInput1.value, sourceInput2.value, sourceInput3.value].filter(url => url.trim() !== '');
+
+            if (!topic) {
+                showError('Video Topic is required.');
+                return;
+            }
+
+            loader.style.display = 'flex';
+            placeholder.style.display = 'none';
+            outputDiv.innerHTML = '';
+            generateButton.disabled = true;
+            document.getElementById('btn-text').textContent = 'Generating...';
+            document.getElementById('btn-loader').classList.remove('hidden');
+
+            try {
+                const data = await apiFetch(generateApiUrl, { topic, persona, urls });
+                
+                if (data.candidates && data.candidates[0].content.parts[0].text) {
+                    const htmlOutput = data.candidates[0].content.parts[0].text;
+                    outputDiv.innerHTML = htmlOutput;
+                    localStorage.setItem('generatedOutline', htmlOutput);
+                } else {
+                    throw new Error('Unexpected API response structure.');
+                }
+            } catch (error) {
+                console.error('Generation Error:', error);
+                showError(`[Generate Function Error]: ${error.message}`);
+                placeholder.style.display = 'flex';
+            } finally {
+                loader.style.display = 'none';
+                generateButton.disabled = false;
+                document.getElementById('btn-text').textContent = 'Generate Outline';
+                document.getElementById('btn-loader').classList.add('hidden');
+            }
+        });
+
+        // --- Copy Button ---
+        copyButton.addEventListener('click', () => {
+            const content = outputDiv.innerHTML;
+            if (!content) return;
+
+            const tempEl = document.createElement('div');
+            tempEl.style.position = 'absolute';
+            tempEl.style.left = '-9999px';
+            tempEl.style.color = '#000000'; // Black text
+            tempEl.style.backgroundColor = '#FFFFFF'; // White background
+            tempEl.innerHTML = content;
+            document.body.appendChild(tempEl);
+
+            const selection = window.getSelection();
+            const range = document.createRange();
+            range.selectNodeContents(tempEl);
+            selection.removeAllRanges();
+            selection.addRange(range);
+
+            try {
+                document.execCommand('copy');
+                copyButton.textContent = 'Copied!';
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+                copyButton.textContent = 'Error';
+            }
+
+            document.body.removeChild(tempEl);
+            selection.removeAllRanges();
+
+            setTimeout(() => {
+                copyButton.textContent = 'Copy';
+            }, 2000);
+        });
+
+        // --- Transcript Modal Logic ---
+        document.querySelectorAll('.show-transcript-btn').forEach(button => {
+            button.addEventListener('click', async () => {
+                hideError();
+                const targetInputId = button.dataset.target;
+                const url = document.getElementById(targetInputId).value;
+                if (!url) {
+                    showError('Please paste a YouTube URL first.');
+                    return;
+                }
+
+                modalTextarea.value = 'Fetching transcript...';
+                transcriptModal.classList.add('modal-open');
+
+                try {
+                    const data = await apiFetch(fetchTranscriptApiUrl, { url });
+                    modalTextarea.value = data.transcript;
+                } catch (error) {
+                    console.error('Transcript Error:', error);
+                    showError(error.message);
+                    modalTextarea.value = `Error: ${error.message}`;
+                }
+            });
+        });
+
+        closeModalBtn.addEventListener('click', () => transcriptModal.classList.remove('modal-open'));
+        copyModalBtn.addEventListener('click', () => {
+            modalTextarea.select();
+            document.execCommand('copy');
+            copyModalBtn.textContent = 'Copied!';
+            setTimeout(() => copyModalBtn.textContent = 'Copy Transcript', 2000);
+        });
+
+        // --- Search Modal Logic ---
+        searchButton.addEventListener('click', async () => {
+            hideError();
+            const query = searchInput.value;
+            if (!query) {
+                showError('Please enter a search term.');
+                return;
+            }
+
+            searchModalContent.innerHTML = '<div class="text-center text-gray-400">Searching...</div>';
+            searchModal.classList.add('modal-open');
+
+            try {
+                const data = await apiFetch(searchApiUrl, { query });
+                if (data.videos && data.videos.length > 0) {
+                    displaySearchResults(data.videos);
+                } else {
+                    searchModalContent.innerHTML = '<div class="text-center text-gray-400">No videos found.</div>';
+                }
+            } catch (error) {
+                console.error('Search Error:', error);
+                showError(error.message);
+                searchModalContent.innerHTML = `<div class="text-center text-red-400">Error: ${error.message}</div>`;
+            }
+        });
+
+        function displaySearchResults(videos) {
+            searchModalContent.innerHTML = '';
+            videos.forEach(video => {
+                const videoUrl = `https://www.youtube.com/watch?v=${video.videoId}`;
+                const videoEl = document.createElement('div');
+                videoEl.className = 'search-result-item flex items-center gap-4 p-3 rounded-lg cursor-pointer transition duration-200';
+                videoEl.innerHTML = `
+                    <img src="${video.thumbnail}" alt="${video.title}" class="w-24 h-16 object-cover rounded">
+                    <div class="flex-1">
+                        <div class="font-semibold text-white">${video.title}</div>
+                        <div class="text-sm text-gray-400">${video.channel}</div>
+                        <div class="text-xs text-indigo-400 mt-1">${videoUrl}</div>
+                    </div>
+                `;
+                // Add click listener to add URL to the first available input
+                videoEl.addEventListener('click', () => {
+                    if (!sourceInput1.value) sourceInput1.value = videoUrl;
+                    else if (!sourceInput2.value) sourceInput2.value = videoUrl;
+                    else if (!sourceInput3.value) sourceInput3.value = videoUrl;
+                    else sourceInput1.value = videoUrl; // Overwrite first one
+                    
+                    // Save to local storage
+                    inputs.forEach(input => localStorage.setItem(input.id, input.value));
+                    
+                    searchModal.classList.remove('modal-open');
+                });
+                searchModalContent.appendChild(videoEl);
+            });
+        }
+
+        closeSearchModalBtn.addEventListener('click', () => searchModal.classList.remove('modal-open'));
+
+        // Close modals on outside click
+        [transcriptModal, searchModal].forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.remove('modal-open');
+                }
+            });
+        });
+
+    </script>
+</body>
+</html>
+
