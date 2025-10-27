@@ -19,7 +19,7 @@ The app allows a user to:
 
 ## Live Demo
 
-The app is deployed on Cloudflare Pages: [https://3ea1b160.youtube-app-4nx.pages.dev/](https://3ea1b160.youtube-app-4nx.pages.dev/ "null") (Note: The app is in a partially broken state).
+The app is deployed on Cloudflare Pages: [https://bbc06a45.youtube-app-4nx.pages.dev/](https://bbc06a45.youtube-app-4nx.pages.dev/ "null") (Note: The app is in a partially broken state).
 
 ## Tech Stack
 
