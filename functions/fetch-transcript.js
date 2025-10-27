@@ -1,3 +1,9 @@
+// This file is in the "broken" state you requested for debugging.
+// It fails with "YoutubeTranscript.fetch is not a function".
+
+// This import is incorrect, causing the runtime error.
+const YoutubeTranscript = require('youtube-transcript');
+
 // Helper to return a JSON error
 function jsonError(message, status = 500) {
     return new Response(JSON.stringify({ error: message }), {
@@ -8,28 +14,20 @@ function jsonError(message, status = 500) {
 
 // Cloudflare's native POST handler for Pages
 export async function onRequestPost(context) {
-    // Top-level try...catch to ensure a JSON response is always sent
+    // Top-level try...catch
     try {
-        // Dynamically import the ESM-only youtube-transcript library
-        // Note: We access .default because it's a default export
-        const YoutubeTranscript = (await import('youtube-transcript')).default;
-        
         const { url } = await context.request.json();
+
         if (!url) {
             return jsonError('URL is required', 400);
         }
 
-        // Use the simple fetch method
+        // This line will fail at runtime
         const transcriptItems = await YoutubeTranscript.fetch(url);
+        
+        const transcriptText = transcriptItems.map(item => item.text).join(' ');
 
-        if (!transcriptItems || transcriptItems.length === 0) {
-            throw new Error('No transcript found or transcript is empty.');
-        }
-
-        // Join the text
-        const transcript = transcriptItems.map(item => item.text).join(' ');
-
-        return new Response(JSON.stringify({ transcript: transcript }), {
+        return new Response(JSON.stringify({ transcript: transcriptText }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' },
         });
@@ -38,14 +36,6 @@ export async function onRequestPost(context) {
         let errorMessage = "An unknown error occurred";
         if (error instanceof Error) {
             errorMessage = error.message;
-        } else if (typeof error === 'string') {
-            errorMessage = error;
-        } else {
-            try {
-                errorMessage = JSON.stringify(error);
-            } catch (e) {
-                errorMessage = "An un-stringifiable error object was caught.";
-            }
         }
         return jsonError(`[Transcript Function Error]: ${errorMessage}`, 500);
     }
