@@ -1,14 +1,20 @@
 const { YoutubeTranscript } = require('youtube-transcript');
 
-exports.handler = async (event) => {
+// Helper to return a JSON error
+function jsonError(message, status = 500) {
+    return new Response(JSON.stringify({ error: message }), {
+        status: status,
+        headers: { 'Content-Type': 'application/json' },
+    });
+}
+
+// Cloudflare's native POST handler
+export async function onRequestPost(context) {
     // Top-level try...catch to ensure a JSON response is always sent
     try {
-        const { url } = JSON.parse(event.body);
+        const { url } = await context.request.json();
         if (!url) {
-            return {
-                statusCode: 400,
-                body: JSON.stringify({ error: 'Missing URL parameter' })
-            };
+            return jsonError('URL is required', 400);
         }
 
         // Use the simple fetch method
@@ -21,10 +27,10 @@ exports.handler = async (event) => {
         // Join the text
         const transcript = transcriptItems.map(item => item.text).join(' ');
 
-        return {
-            statusCode: 200,
-            body: JSON.stringify({ transcript: transcript })
-        };
+        return new Response(JSON.stringify({ transcript: transcript }), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+        });
 
     } catch (error) {
         let errorMessage = "An unknown error occurred";
@@ -39,10 +45,7 @@ exports.handler = async (event) => {
                 errorMessage = "An un-stringifiable error object was caught.";
             }
         }
-
-        return {
-            statusCode: 500,
-            body: JSON.stringify({ error: `[Transcript Function Error]: ${errorMessage}` })
-        };
+        return jsonError(`[Transcript Function Error]: ${errorMessage}`, 500);
     }
-};
+}
+
