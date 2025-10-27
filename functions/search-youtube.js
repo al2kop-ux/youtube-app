@@ -7,6 +7,7 @@ function jsonError(message, status = 500) {
 }
 
 // Cloudflare's native POST handler for Pages
+// This version was correctly fetching search results.
 export async function onRequestPost(context) {
     // Top-level try...catch
     try {
@@ -40,25 +41,11 @@ export async function onRequestPost(context) {
 
         const data = await response.json();
         
-        // --- NEW, STRICTER LOGIC ---
-        // We will now ONLY return a 200 OK if we have items.
-        // Everything else will be treated as an error so we can debug it.
-        
-        if (data.items && data.items.length > 0) {
-            // Success! Send the data back.
-            return new Response(JSON.stringify(data), {
-                status: 200,
-                headers: { 'Content-Type': 'application/json' },
-            });
-        }
-        
-        // --- If we are here, it means we got no items. ---
-        // This will now be treated as an error.
-        
-        // Let's send the raw response back as an error message for debugging.
-        const rawResponseText = JSON.stringify(data, null, 2);
-        return jsonError(`No items found. Full API Response: ${rawResponseText}`, 404);
-        
+        // This is the original, simple success logic
+        return new Response(JSON.stringify(data), {
+            status: 200,
+            headers: { 'Content-Type': 'application/json' },
+        });
 
     } catch (error) {
         let errorMessage = "An unknown error occurred";
