@@ -1,51 +1,48 @@
-import YoutubeTranscript from 'youtube-transcript';
+const { YoutubeTranscript } = require('youtube-transcript');
 
-// Helper to return a JSON error
-function jsonError(message, status = 500) {
-    return new Response(JSON.stringify({ error: message }), {
-        status: status,
-        headers: { 'Content-Type': 'application/json' },
-    });
-}
-
-// Cloudflare's native ESM handler
-export default {
-    async fetch(request, env, context) {
-        // We only handle POST requests
-        if (request.method !== 'POST') {
-            return jsonError('Method Not Allowed', 405);
+exports.handler = async (event) => {
+    // Top-level try...catch to ensure a JSON response is always sent
+    try {
+        const { url } = JSON.parse(event.body);
+        if (!url) {
+            return {
+                statusCode: 400,
+                body: JSON.stringify({ error: 'Missing URL parameter' })
+            };
         }
 
-        try {
-            const { url } = await request.json();
-            if (!url) {
-                return jsonError('URL is required', 400);
-            }
-            
-            const transcriptItems = await YoutubeTranscript.fetch(url);
-            
-            const fullTranscript = transcriptItems.map(item => item.text).join(' ');
+        // Use the simple fetch method
+        const transcriptItems = await YoutubeTranscript.fetch(url);
 
-            return new Response(JSON.stringify({ transcript: fullTranscript }), {
-                status: 200,
-                headers: { 'Content-Type': 'application/json' },
-            });
-
-        } catch (error) {
-            let errorMessage = "An unknown error occurred";
-            if (error instanceof Error) {
-                errorMessage = error.message;
-            } else if (typeof error === 'string') {
-                errorMessage = error;
-            } else {
-                try {
-                    errorMessage = JSON.stringify(error);
-                } catch (e) {
-                    errorMessage = "An un-stringifiable error object was caught.";
-                }
-            }
-            return jsonError(`[Transcript Function Error]: ${errorMessage}`, 500);
+        if (!transcriptItems || transcriptItems.length === 0) {
+            throw new Error('No transcript found or transcript is empty.');
         }
+
+        // Join the text
+        const transcript = transcriptItems.map(item => item.text).join(' ');
+
+        return {
+            statusCode: 200,
+            body: JSON.stringify({ transcript: transcript })
+        };
+
+    } catch (error) {
+        let errorMessage = "An unknown error occurred";
+        if (error instanceof Error) {
+            errorMessage = error.message;
+        } else if (typeof error === 'string') {
+            errorMessage = error;
+        } else {
+            try {
+                errorMessage = JSON.stringify(error);
+            } catch (e) {
+                errorMessage = "An un-stringifiable error object was caught.";
+            }
+        }
+
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ error: `[Transcript Function Error]: ${errorMessage}` })
+        };
     }
-}
-
+};
