@@ -1,42 +1,60 @@
-export async function onRequestPost(context) {
+// Helper to return a JSON error
+function jsonError(message, status = 500) {
+    return new Response(JSON.stringify({ error: message }), {
+        status: status,
+        headers: { 'Content-Type': 'application/json' }
+    });
+}
+
+// Cloudflare's generic 'onRequest' handler
+export async function onRequest(context) {
+    // 1. Check for POST method
+    if (context.request.method !== 'POST') {
+        return new Response('Method Not Allowed', { status: 405 });
+    }
+
+    // 2. Safely parse the request body
+    let body;
     try {
-        const { query } = await context.request.json();
-        
-        // Get API key from Cloudflare environment variables
-        const apiKey = context.env.YOUTUBE_API_KEY;
+        body = await context.request.json();
+    } catch (e) {
+        return jsonError('Invalid JSON body', 400);
+    }
 
-        if (!apiKey) {
-            return new Response(JSON.stringify({ error: 'YouTube API key is not set.' }), {
-                status: 500,
-                headers: { 'Content-Type': 'application/json' },
-            });
-        }
+    const { query } = body;
+    const { YOUTUBE_API_KEY } = context.env;
 
-        const maxResults = 10;
-        const apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=${maxResults}&key=${apiKey}`;
+    if (!query) return jsonError('Search query is required', 400);
+    if (!YOUTUBE_API_KEY) return jsonError('YouTube API key is not set', 500);
 
+    // 3. Call the YouTube API
+    const maxResults = 10;
+    const apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&maxResults=${maxResults}&key=${YOUTUBE_API_KEY}`;
+
+    try {
         const response = await fetch(apiUrl);
-        const data = await response.json();
-
         if (!response.ok) {
-            throw new Error(data.error.message || 'Failed to fetch from YouTube API');
+            const errorText = await response.text();
+            return jsonError(`YouTube API Error: ${errorText}`, response.status);
         }
 
+        const data = await response.json();
+        
+        // 4. Format the response
         const videos = data.items.map(item => ({
             videoId: item.id.videoId,
             title: item.snippet.title,
-            channel: item.snippet.channelTitle,
-            thumbnail: item.snippet.thumbnails.default.url
+            thumbnail: item.snippet.thumbnails.default.url,
+            channel: item.snippet.channelTitle
         }));
-
+        
+        // 5. Return the successful response
         return new Response(JSON.stringify({ videos: videos }), {
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json' }
         });
 
     } catch (error) {
-        return new Response(JSON.stringify({ error: `[Search Function Error]: ${error.message}` }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' },
-        });
+        return jsonError(error.message, 500);
     }
 }
+
