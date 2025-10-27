@@ -1,158 +1,274 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouTube Script Outline Generator</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { font-family: 'Inter', sans-serif; }
-        .modal { display: none; }
-        .modal-open { display: flex; }
-        #outputDiv h2 { font-size: 1.5rem; font-weight: 600; margin-top: 1.25rem; margin-bottom: 0.5rem; }
-        #outputDiv h3 { font-size: 1.25rem; font-weight: 600; margin-top: 1rem; margin-bottom: 0.25rem; }
-        #outputDiv p { margin-bottom: 0.5rem; }
-        #outputDiv ul { list-style-type: disc; margin-left: 1.5rem; margin-bottom: 0.5rem; }
-        #outputDiv em { font-style: italic; color: #a5b4fc; /* Light indigo */ }
-        .loader { border-top-color: #6366f1; }
-        .search-result-item:hover { background-color: #374151; /* Gray 700 */ }
+        :root {
+            --bg-color: #111827;
+            --card-color: #1F2937;
+            --text-color: #F9FAFB;
+            --text-muted: #9CA3AF;
+            --accent-color: #4F46E5;
+            --accent-hover: #4338CA;
+            --error-bg: #440000;
+            --error-border: #DC2626;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--bg-color);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #4B5563;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6B7280;
+        }
+
+        input, select, textarea {
+            background-color: var(--card-color);
+            border: 1px solid #374151;
+            color: var(--text-color);
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px var(--accent-color);
+        }
+        
+        .btn {
+            background-color: var(--accent-color);
+            color: white;
+            transition: background-color 0.2s;
+            border-radius: 0.375rem; /* rounded-md */
+        }
+        .btn:hover {
+            background-color: var(--accent-hover);
+        }
+        .btn-secondary {
+            background-color: #374151;
+        }
+        .btn-secondary:hover {
+            background-color: #4B5563;
+        }
+
+        /* Generated HTML styles */
+        #outputDiv h2 {
+            font-size: 1.25rem; /* text-xl */
+            font-weight: 600; /* font-semibold */
+            margin-top: 1.5rem; /* mt-6 */
+            margin-bottom: 0.5rem; /* mb-2 */
+            border-bottom: 1px solid #374151;
+            padding-bottom: 0.25rem; /* pb-1 */
+        }
+        #outputDiv h3 {
+            font-size: 1.125rem; /* text-lg */
+            font-weight: 600; /* font-semibold */
+            margin-top: 1rem; /* mt-4 */
+            margin-bottom: 0.25rem; /* mb-1 */
+            color: #D1D5DB; /* text-gray-300 */
+        }
+        #outputDiv p {
+            margin-bottom: 0.5rem; /* mb-2 */
+            line-height: 1.6;
+        }
+        #outputDiv ul {
+            list-style-type: disc;
+            margin-left: 1.5rem; /* ml-6 */
+            margin-bottom: 0.5rem; /* mb-2 */
+        }
+        #outputDiv li {
+            margin-bottom: 0.25rem; /* mb-1 */
+        }
+        #outputDiv em {
+            color: var(--text-muted);
+        }
+        #outputDiv strong {
+             color: #E5E7EB; /* text-gray-200 */
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed;
+            z-index: 50;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.6);
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Search Results Styles */
+        .search-item {
+            border-bottom: 1px solid #374151;
+            transition: background-color 0.2s;
+        }
+        .search-item:hover {
+            background-color: #374151;
+        }
+        .search-item img {
+            width: 120px;
+            height: 68px;
+            object-fit: cover;
+            border-radius: 0.25rem;
+        }
     </style>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-<body class="bg-gray-900 text-gray-100 min-h-screen p-4 md:p-8">
 
+<body class="p-4 md:p-8">
     <div class="max-w-7xl mx-auto">
-        <h1 class="text-3xl font-bold text-center text-white mb-8">YouTube Script Outline Generator</h1>
+        <h1 class="text-3xl font-bold text-center mb-8">YouTube Script Outline Generator</h1>
 
         <!-- Error Box -->
-        <div id="errorBox" class="hidden bg-red-800 border border-red-600 text-white p-4 rounded-lg mb-6">
-            <strong class="font-bold">Error:</strong>
-            <span id="errorMessage" class="block">Something went wrong.</span>
+        <div id="errorBox" class="hidden bg-red-900/50 border border-red-700 text-red-200 px-4 py-3 rounded-md relative mb-6" role="alert">
+            <strong class="font-bold">Error: </strong>
+            <span class="block sm:inline" id="errorMessage"></span>
         </div>
 
-        <!-- Main Content Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <!-- Left Column: Inputs -->
-            <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
-                <h2 class="text-2xl font-semibold mb-6 text-white">1. Inputs</h2>
+            <div class="space-y-6">
+                <h2 class="text-2xl font-semibold border-b border-gray-700 pb-2">1. Inputs</h2>
 
-                <!-- Search YouTube -->
-                <div class="mb-6">
+                <!-- YouTube Search -->
+                <div>
                     <label for="searchInput" class="block text-sm font-medium text-gray-300 mb-2">Search YouTube for inspiration:</label>
-                    <div class="flex gap-2">
-                        <input type="text" id="searchInput" class="flex-grow bg-gray-700 border border-gray-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., 'best pos systems for small business'">
-                        <button id="searchButton" class="bg-indigo-600 text-white font-semibold py-3 px-5 rounded-lg hover:bg-indigo-700 transition duration-200">
-                            Search
-                        </button>
+                    <div class="flex space-x-2">
+                        <input type="text" id="searchInput" placeholder="E.g., 'best POS systems for small business'" class="w-full px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <button id="searchButton" class="px-4 py-2 btn font-semibold">Search</button>
                     </div>
                 </div>
 
-                <!-- Video Topic -->
-                <div class="mb-4">
+                <div>
                     <label for="topicInput" class="block text-sm font-medium text-gray-300 mb-2">Video Topic (Required)</label>
-                    <input type="text" id="topicInput" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="e.g., 'Best POS Systems for Small Business'">
+                    <input type="text" id="topicInput" placeholder="E.g., 'Best POS Systems for Small Business'" class="w-full px-3 py-2 rounded-md">
                 </div>
-                
-                <!-- Persona Dropdown -->
-                <div class="mb-4">
+
+                <div>
                     <label for="personaSelect" class="block text-sm font-medium text-gray-300 mb-2">Select Persona</label>
-                    <select id="personaSelect" class="w-full bg-gray-700 border border-gray-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <select id="personaSelect" class="w-full px-3 py-2 rounded-md">
                         <option value="default">Default (Generic Expert)</option>
-                        <option value="korona">Michael - KORONA POS</option>
-                        <option value="verticulate">Mihkel - Verticulate</option>
+                        <option value="michael-korona">Michael - Korona</option>
+                        <option value="mike-verticulate">Mike - Verticulate</option>
                     </select>
                 </div>
 
-                <!-- Source URLs -->
+                <!-- YouTube URLs -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">YouTube URLs (Optional)</label>
-                    <p class="text-xs text-gray-400 mb-3">Paste URLs to pull transcripts as source material.</p>
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="block text-sm font-medium text-gray-300">YouTube URLs (Optional)</label>
+                        <button id="howToBtn" class="text-xs text-indigo-400 hover:text-indigo-300">How to get transcript?</button>
+                    </div>
+                    <p id="howToText" class="hidden text-xs text-gray-400 mb-3 p-3 bg-gray-900 rounded-md">
+                        1. Open a YouTube video.<br>
+                        2. Click the '...' (More) button below the video.<br>
+                        3. Click 'Show transcript'.<br>
+                        4. Copy the video's URL (from the browser address bar) and paste it below.
+                    </p>
                     <div class="space-y-3">
-                        <div class="flex gap-2">
-                            <input type="url" id="sourceInput1" class="flex-grow bg-gray-700 border border-gray-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="https://www.youtube.com/watch?v=...">
-                            <button data-target="sourceInput1" class="show-transcript-btn bg-gray-600 text-white font-medium py-3 px-4 rounded-lg hover:bg-gray-500 transition duration-200 text-sm">Show Transcript</button>
+                        <div class="flex space-x-2">
+                            <input type="text" id="sourceInput1" placeholder="https://www.youtube.com/watch?v=..." class="w-full px-3 py-2 rounded-md">
+                            <button class="showTranscriptBtn px-3 py-2 btn-secondary text-xs font-medium whitespace-nowrap" data-target="sourceInput1">Show Transcript</button>
                         </div>
-                        <div class="flex gap-2">
-                            <input type="url" id="sourceInput2" class="flex-grow bg-gray-700 border border-gray-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="https://www.youtube.com/watch?v=...">
-                            <button data-target="sourceInput2" class="show-transcript-btn bg-gray-600 text-white font-medium py-3 px-4 rounded-lg hover:bg-gray-500 transition duration-200 text-sm">Show Transcript</button>
+                        <div class="flex space-x-2">
+                            <input type="text" id="sourceInput2" placeholder="https://www.youtube.com/watch?v=..." class="w-full px-3 py-2 rounded-md">
+                            <button class="showTranscriptBtn px-3 py-2 btn-secondary text-xs font-medium whitespace-nowrap" data-target="sourceInput2">Show Transcript</button>
                         </div>
-                        <div class="flex gap-2">
-                            <input type="url" id="sourceInput3" class="flex-grow bg-gray-700 border border-gray-600 text-white rounded-lg p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="https://www.youtube.com/watch?v=...">
-                            <button data-target="sourceInput3" class="show-transcript-btn bg-gray-600 text-white font-medium py-3 px-4 rounded-lg hover:bg-gray-500 transition duration-200 text-sm">Show Transcript</button>
+                        <div class="flex space-x-2">
+                            <input type="text" id="sourceInput3" placeholder="https://www.youtube.com/watch?v=..." class="w-full px-3 py-2 rounded-md">
+                            <button class="showTranscriptBtn px-3 py-2 btn-secondary text-xs font-medium whitespace-nowrap" data-target="sourceInput3">Show Transcript</button>
                         </div>
                     </div>
                 </div>
 
-                <!-- Generate Button -->
-                <div class="mt-8">
-                    <button id="generateButton" class="w-full bg-indigo-600 text-white font-bold py-4 px-6 rounded-lg text-lg hover:bg-indigo-700 transition duration-200 flex items-center justify-center">
-                        <span id="btn-text">Generate Outline</span>
-                        <div id="btn-loader" class="hidden loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-6 w-6 ml-3"></div>
-                    </button>
-                </div>
+                <button id="generateButton" class="w-full py-3 btn text-lg font-bold">
+                    Generate Outline
+                </button>
             </div>
 
             <!-- Right Column: Output -->
-            <div class="bg-gray-800 p-6 rounded-lg shadow-lg">
-                <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-semibold text-white">2. Generated Outline</h2>
-                    <button id="copyButton" class="bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-gray-500 transition duration-200">Copy</button>
+            <div class="relative min-h-[400px]">
+                <div class="flex justify-between items-center mb-2">
+                    <h2 class="text-2xl font-semibold border-b border-gray-700 pb-2">2. Generated Outline</h2>
+                    <button id="copyButton" class="px-4 py-2 btn-secondary text-sm font-medium">Copy</button>
                 </div>
                 
-                <div id="outputContainer" class="relative bg-gray-900 border border-gray-700 rounded-lg p-6 min-h-[500px] max-h-[70vh] overflow-y-auto">
-                    <!-- Placeholder -->
-                    <div id="placeholder" class="absolute inset-0 flex items-center justify-center text-gray-500">
-                        Your script outline will appear here...
-                    </div>
+                <div id="outputContainer" class="relative w-full h-[600px] bg-card-color rounded-md border border-gray-700 overflow-auto p-4">
                     <!-- Loader -->
-                    <div id="loader" class="hidden absolute inset-0 flex items-center justify-center bg-gray-900 bg-opacity-75">
-                        <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-600 h-24 w-24"></div>
+                    <div id="loader" class="hidden absolute inset-0 bg-card-color/80 backdrop-blur-sm flex items-center justify-center">
+                        <div class="flex flex-col items-center">
+                            <svg class="animate-spin h-8 w-8 text-white mb-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            <span class="text-sm text-gray-300">Generating script...</span>
+                        </div>
+                    </div>
+                    <!-- Placeholder -->
+                    <div id="placeholder" class="absolute inset-0 flex items-center justify-center">
+                        <p class="text-gray-500">Your script outline will appear here...</p>
                     </div>
                     <!-- Output Content -->
-                    <div id="outputDiv" class="prose prose-invert max-w-none"></div>
+                    <div id="outputDiv"></div>
                 </div>
             </div>
-
         </div>
     </div>
 
     <!-- Transcript Modal -->
-    <div id="transcriptModal" class="modal fixed inset-0 bg-black bg-opacity-75 items-center justify-center p-4">
-        <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl">
+    <div id="transcriptModal" class="modal">
+        <div class="bg-card-color w-full max-w-2xl rounded-lg shadow-xl border border-gray-700 m-4">
             <div class="flex justify-between items-center p-4 border-b border-gray-700">
-                <h3 class="text-lg font-semibold text-white">Transcript</h3>
-                <button id="closeModalBtn" class="text-gray-400 hover:text-white">&times;</Cbutton>
+                <h3 class="text-lg font-semibold">Transcript</h3>
+                <button id="closeModalBtn" class="text-gray-400 hover:text-white">&times;</button>
             </div>
             <div class="p-4">
-                <textarea id="modalTextarea" readonly class="w-full h-64 bg-gray-900 text-gray-300 border border-gray-700 rounded-lg p-3"></textarea>
+                <textarea id="modalTextarea" class="w-full h-64 p-2 rounded-md" readonly></textarea>
             </div>
             <div class="flex justify-end p-4 border-t border-gray-700">
-                <button id="copyModalBtn" class="bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg hover:bg-indigo-700 transition duration-200">Copy Transcript</button>
+                <button id="copyModalBtn" class="px-4 py-2 btn font-semibold">Copy Transcript</button>
             </div>
         </div>
     </div>
 
-    <!-- Search Modal -->
-    <div id="searchModal" class="modal fixed inset-0 bg-black bg-opacity-75 items-center justify-center p-4">
-        <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl">
+    <!-- YouTube Search Modal -->
+    <div id="searchModal" class="modal">
+        <div class="bg-card-color w-full max-w-3xl rounded-lg shadow-xl border border-gray-700 m-4">
             <div class="flex justify-between items-center p-4 border-b border-gray-700">
-                <h3 class="text-lg font-semibold text-white">YouTube Search Results</h3>
+                <h3 class="text-lg font-semibold">YouTube Search Results</h3>
                 <button id="closeSearchModalBtn" class="text-gray-400 hover:text-white">&times;</button>
             </div>
-            <div id="searchModalContent" class="p-4 max-h-[70vh] overflow-y-auto">
-                <!-- Search results will be injected here -->
+            <div id="searchModalContent" class="p-4 h-[70vh] overflow-y-auto">
+                <!-- Results will be injected here -->
             </div>
         </div>
     </div>
 
+
     <script>
-        // --- API URLs (Cloudflare Pages) ---
-        const generateApiUrl = `/generate`; 
-        const fetchTranscriptApiUrl = `/fetch-transcript`; 
-        const searchApiUrl = `/search-youtube`;
+        // --- API URLs ---
+        const generateApiUrl = `/functions/generate`; 
+        const fetchTranscriptApiUrl = `/functions/fetch-transcript`; 
+        const searchApiUrl = `/functions/search-youtube`;
 
         // --- Element Selectors ---
         const topicInput = document.getElementById('topicInput');
@@ -175,249 +291,299 @@
         const modalTextarea = document.getElementById('modalTextarea');
         const copyModalBtn = document.getElementById('copyModalBtn');
 
-        // Search Modal
+        // --- NEW: Search Modal Elements ---
         const searchInput = document.getElementById('searchInput');
         const searchButton = document.getElementById('searchButton');
         const searchModal = document.getElementById('searchModal');
         const closeSearchModalBtn = document.getElementById('closeSearchModalBtn');
         const searchModalContent = document.getElementById('searchModalContent');
 
-        // --- Local Storage ---
-        const inputs = [topicInput, personaSelect, sourceInput1, sourceInput2, sourceInput3, searchInput];
-        inputs.forEach(input => {
-            if (localStorage.getItem(input.id)) {
-                input.value = localStorage.getItem(input.id);
-            }
-            input.addEventListener('input', () => localStorage.setItem(input.id, input.value));
-        });
-
-        if (localStorage.getItem('generatedOutline')) {
-            outputDiv.innerHTML = localStorage.getItem('generatedOutline');
-            placeholder.style.display = 'none';
-        }
-
-        // --- Error Handling ---
+        // --- Helper Functions ---
+        
         function showError(message) {
             errorMessage.textContent = message;
             errorBox.classList.remove('hidden');
         }
-        function hideError() {
+
+        function clearError() {
             errorBox.classList.add('hidden');
+            errorMessage.textContent = '';
         }
 
-        // --- API Call Helper ---
+        // Universal API Fetch Helper
         async function apiFetch(url, body) {
             const response = await fetch(url, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
+                body: JSON.stringify(body),
             });
 
             if (!response.ok) {
-                const initialErrorMsg = `Error: ${response.status} ${response.statusText}`;
-                
-                // Clone the response to read it multiple times
+                // Clone the response to safely read it
                 const resClone = response.clone();
-
-                let errorMsg;
+                let errorMsg = `Error: ${response.status}`;
                 try {
-                    // Try to parse error as JSON from the clone
-                    const errData = await resClone.json(); 
-                    // Use errData.error if it's a non-empty string, otherwise fall back
-                    errorMsg = errData.error || JSON.stringify(errData);
+                    // Try to parse as JSON first
+                    const errJson = await response.json();
+                    errorMsg = errJson.error || JSON.stringify(errJson);
                 } catch (e) {
-                    // If JSON fails, read the original response as text
+                    // If not JSON, try to parse as text
                     try {
-                        const textError = await response.text();
-                        // Use textError if it's a non-empty string, otherwise fall back
-                        errorMsg = textError || initialErrorMsg;
-                    } catch (textErr) {
-                        // If all fails, just use the status
-                        errorMsg = initialErrorMsg;
+                        const errText = await resClone.text();
+                        if (errText) {
+                            errorMsg = errText;
+                        } else {
+                            errorMsg = `Error: ${response.status} ${response.statusText}`;
+                        }
+                    } catch (e2) {
+                        // Fallback
+                         errorMsg = `Error: ${response.status} ${response.statusText}`;
                     }
                 }
                 throw new Error(errorMsg);
             }
-            // If response is OK, just return JSON
-            return response.json(); 
+            return response.json();
         }
 
-        // --- Generate Button ---
-        generateButton.addEventListener('click', async () => {
-            hideError();
-            const topic = topicInput.value;
-            const persona = personaSelect.value;
-            const urls = [sourceInput1.value, sourceInput2.value, sourceInput3.value].filter(url => url.trim() !== '');
+        // --- Load from LocalStorage ---
+        function loadState() {
+            topicInput.value = localStorage.getItem('ytScript_topic') || '';
+            personaSelect.value = localStorage.getItem('ytScript_persona') || 'default';
+            sourceInput1.value = localStorage.getItem('ytScript_url1') || '';
+            sourceInput2.value = localStorage.getItem('ytScript_url2') || '';
+            sourceInput3.value = localStorage.getItem('ytScript_url3') || '';
+            const savedOutput = localStorage.getItem('ytScript_output');
+            if (savedOutput) {
+                outputDiv.innerHTML = savedOutput;
+                placeholder.classList.add('hidden');
+            }
+        }
 
+        // --- Save to LocalStorage ---
+        function saveState() {
+            localStorage.setItem('ytScript_topic', topicInput.value);
+            localStorage.setItem('ytScript_persona', personaSelect.value);
+            localStorage.setItem('ytScript_url1', sourceInput1.value);
+            localStorage.setItem('ytScript_url2', sourceInput2.value);
+            localStorage.setItem('ytScript_url3', sourceInput3.value);
+        }
+        
+        function saveOutput() {
+             localStorage.setItem('ytScript_output', outputDiv.innerHTML);
+        }
+        
+        // Add listeners to save inputs on change
+        topicInput.addEventListener('input', saveState);
+        personaSelect.addEventListener('change', saveState);
+        sourceInput1.addEventListener('input', saveState);
+        sourceInput2.addEventListener('input', saveState);
+        sourceInput3.addEventListener('input', saveState);
+        
+        // --- Generate Button Click ---
+        generateButton.addEventListener('click', async () => {
+            clearError();
+            const topic = topicInput.value;
             if (!topic) {
                 showError('Video Topic is required.');
                 return;
             }
 
-            loader.style.display = 'flex';
-            placeholder.style.display = 'none';
-            outputDiv.innerHTML = '';
+            loader.classList.remove('hidden');
+            placeholder.classList.add('hidden');
             generateButton.disabled = true;
-            document.getElementById('btn-text').textContent = 'Generating...';
-            document.getElementById('btn-loader').classList.remove('hidden');
 
             try {
-                const data = await apiFetch(generateApiUrl, { topic, persona, urls });
+                const body = {
+                    topic: topic,
+                    persona: personaSelect.value,
+                    url1: sourceInput1.value,
+                    url2: sourceInput2.value,
+                    url3: sourceInput3.value
+                };
                 
-                if (data.candidates && data.candidates[0].content.parts[0].text) {
-                    const htmlOutput = data.candidates[0].content.parts[0].text;
-                    outputDiv.innerHTML = htmlOutput;
-                    localStorage.setItem('generatedOutline', htmlOutput);
+                const data = await apiFetch(generateApiUrl, body);
+                
+                const candidate = data.candidates?.[0];
+                if (candidate && candidate.content?.parts?.[0]?.text) {
+                    const text = candidate.content.parts[0].text;
+                    outputDiv.innerHTML = text.replace(/^<div>/, '').replace(/<\/div>$/, ''); // Clean up wrapper
+                    saveOutput();
                 } else {
-                    throw new Error('Unexpected API response structure.');
+                    throw new Error('Invalid response structure from AI.');
                 }
+
             } catch (error) {
-                console.error('Generation Error:', error);
-                showError(`[Generate Function Error]: ${error.message}`);
-                placeholder.style.display = 'flex';
+                showError(error.message);
+                placeholder.classList.remove('hidden');
             } finally {
-                loader.style.display = 'none';
+                loader.classList.add('hidden');
                 generateButton.disabled = false;
-                document.getElementById('btn-text').textContent = 'Generate Outline';
-                document.getElementById('btn-loader').classList.add('hidden');
             }
         });
 
         // --- Copy Button ---
         copyButton.addEventListener('click', () => {
-            const content = outputDiv.innerHTML;
-            if (!content) return;
-
-            const tempEl = document.createElement('div');
-            tempEl.style.position = 'absolute';
-            tempEl.style.left = '-9999px';
-            tempEl.style.color = '#000000'; // Black text
-            tempEl.style.backgroundColor = '#FFFFFF'; // White background
-            tempEl.innerHTML = content;
-            document.body.appendChild(tempEl);
-
-            const selection = window.getSelection();
-            const range = document.createRange();
-            range.selectNodeContents(tempEl);
-            selection.removeAllRanges();
-            selection.addRange(range);
-
             try {
+                // Create a temporary element to hold the rich text
+                const tempEl = document.createElement('div');
+                tempEl.innerHTML = outputDiv.innerHTML;
+                
+                // Set default styles to avoid dark background
+                tempEl.style.color = '#000000';
+                tempEl.style.backgroundColor = '#ffffff';
+                tempEl.style.position = 'absolute';
+                tempEl.style.left = '-9999px';
+                document.body.appendChild(tempEl);
+
+                // Select the content of the temporary element
+                const range = document.createRange();
+                range.selectNodeContents(tempEl);
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+
+                // Copy to clipboard
                 document.execCommand('copy');
+
+                // Clean up
+                document.body.removeChild(tempEl);
+                window.getSelection().removeAllRanges();
+
+                // Show feedback
                 copyButton.textContent = 'Copied!';
+                setTimeout(() => {
+                    copyButton.textContent = 'Copy';
+                }, 2000);
             } catch (err) {
                 console.error('Failed to copy text: ', err);
-                copyButton.textContent = 'Error';
+                // Fallback for plain text
+                navigator.clipboard.writeText(outputDiv.innerText);
+                copyButton.textContent = 'Copied (plain)!';
+                setTimeout(() => {
+                    copyButton.textContent = 'Copy';
+                }, 2000);
             }
-
-            document.body.removeChild(tempEl);
-            selection.removeAllRanges();
-
-            setTimeout(() => {
-                copyButton.textContent = 'Copy';
-            }, 2000);
+        });
+        
+        // --- "How To" Toggle ---
+        document.getElementById('howToBtn').addEventListener('click', () => {
+            document.getElementById('howToText').classList.toggle('hidden');
         });
 
         // --- Transcript Modal Logic ---
-        document.querySelectorAll('.show-transcript-btn').forEach(button => {
+        document.querySelectorAll('.showTranscriptBtn').forEach(button => {
             button.addEventListener('click', async () => {
-                hideError();
-                const targetInputId = button.dataset.target;
-                const url = document.getElementById(targetInputId).value;
+                clearError();
+                const targetId = button.dataset.target;
+                const url = document.getElementById(targetId).value;
                 if (!url) {
                     showError('Please paste a YouTube URL first.');
                     return;
                 }
-
+                
                 modalTextarea.value = 'Fetching transcript...';
-                transcriptModal.classList.add('modal-open');
-
+                transcriptModal.style.display = 'flex';
+                
                 try {
                     const data = await apiFetch(fetchTranscriptApiUrl, { url });
                     modalTextarea.value = data.transcript;
                 } catch (error) {
-                    console.error('Transcript Error:', error);
-                    showError(error.message);
                     modalTextarea.value = `Error: ${error.message}`;
                 }
             });
         });
 
-        closeModalBtn.addEventListener('click', () => transcriptModal.classList.remove('modal-open'));
+        closeModalBtn.addEventListener('click', () => {
+            transcriptModal.style.display = 'none';
+        });
+
         copyModalBtn.addEventListener('click', () => {
             modalTextarea.select();
             document.execCommand('copy');
             copyModalBtn.textContent = 'Copied!';
-            setTimeout(() => copyModalBtn.textContent = 'Copy Transcript', 2000);
+            setTimeout(() => {
+                copyModalBtn.textContent = 'Copy Transcript';
+            }, 2000);
         });
 
-        // --- Search Modal Logic ---
+        // --- YouTube Search Modal Logic ---
         searchButton.addEventListener('click', async () => {
-            hideError();
+            clearError();
             const query = searchInput.value;
             if (!query) {
                 showError('Please enter a search term.');
                 return;
             }
-
-            searchModalContent.innerHTML = '<div class="text-center text-gray-400">Searching...</div>';
-            searchModal.classList.add('modal-open');
-
+            
+            searchModalContent.innerHTML = '<p class="text-gray-400">Searching...</p>';
+            searchModal.style.display = 'flex';
+            
             try {
                 const data = await apiFetch(searchApiUrl, { query });
-                if (data.videos && data.videos.length > 0) {
-                    displaySearchResults(data.videos);
+                
+                if (data.items && data.items.length > 0) {
+                    searchModalContent.innerHTML = ''; // Clear "Searching..."
+                    data.items.forEach(item => {
+                        const snippet = item.snippet;
+                        const videoId = item.id.videoId;
+                        const videoUrl = `https://www.youtube.com/watch?v=${videoId}`;
+                        
+                        const itemEl = document.createElement('div');
+                        itemEl.className = 'search-item flex items-start space-x-4 p-3 rounded-md';
+                        itemEl.innerHTML = `
+                            <img src="${snippet.thumbnails.default.url}" alt="Thumbnail">
+                            <div class="flex-1">
+                                <h4 class="font-semibold text-sm text-gray-100 mb-1">${snippet.title}</h4>
+                                <p class="text-xs text-gray-400 mb-2">${snippet.channelTitle}</p>
+                                <button class="use-url-btn text-xs btn px-2 py-1" data-url="${videoUrl}">Use this URL</button>
+                            </div>
+                        `;
+                        searchModalContent.appendChild(itemEl);
+                    });
                 } else {
-                    searchModalContent.innerHTML = '<div class="text-center text-gray-400">No videos found.</div>';
+                    searchModalContent.innerHTML = '<p class="text-gray-400">No videos found.</p>';
                 }
+
             } catch (error) {
-                console.error('Search Error:', error);
-                showError(error.message);
-                searchModalContent.innerHTML = `<div class="text-center text-red-400">Error: ${error.message}</div>`;
+                searchModalContent.innerHTML = `<p class="text-red-400">Error: ${error.message}</p>`;
             }
         });
 
-        function displaySearchResults(videos) {
-            searchModalContent.innerHTML = '';
-            videos.forEach(video => {
-                const videoUrl = `https://www.youtube.com/watch?v=${video.videoId}`;
-                const videoEl = document.createElement('div');
-                videoEl.className = 'search-result-item flex items-center gap-4 p-3 rounded-lg cursor-pointer transition duration-200';
-                videoEl.innerHTML = `
-                    <img src="${video.thumbnail}" alt="${video.title}" class="w-24 h-16 object-cover rounded">
-                    <div class="flex-1">
-                        <div class="font-semibold text-white">${video.title}</div>
-                        <div class="text-sm text-gray-400">${video.channel}</div>
-                        <div class="text-xs text-indigo-400 mt-1">${videoUrl}</div>
-                    </div>
-                `;
-                // Add click listener to add URL to the first available input
-                videoEl.addEventListener('click', () => {
-                    if (!sourceInput1.value) sourceInput1.value = videoUrl;
-                    else if (!sourceInput2.value) sourceInput2.value = videoUrl;
-                    else if (!sourceInput3.value) sourceInput3.value = videoUrl;
-                    else sourceInput1.value = videoUrl; // Overwrite first one
-                    
-                    // Save to local storage
-                    inputs.forEach(input => localStorage.setItem(input.id, input.value));
-                    
-                    searchModal.classList.remove('modal-open');
-                });
-                searchModalContent.appendChild(videoEl);
-            });
-        }
-
-        closeSearchModalBtn.addEventListener('click', () => searchModal.classList.remove('modal-open'));
-
-        // Close modals on outside click
-        [transcriptModal, searchModal].forEach(modal => {
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) {
-                    modal.classList.remove('modal-open');
-                }
-            });
+        closeSearchModalBtn.addEventListener('click', () => {
+            searchModal.style.display = 'none';
         });
 
+        // Event delegation for "Use this URL" buttons
+        searchModalContent.addEventListener('click', (e) => {
+            if (e.target.classList.contains('use-url-btn')) {
+                const url = e.target.dataset.url;
+                // Find the first empty URL input
+                let targetInput = [sourceInput1, sourceInput2, sourceInput3].find(input => !input.value);
+                if (targetInput) {
+                    targetInput.value = url;
+                    saveState();
+                    searchModal.style.display = 'none';
+                } else {
+                    // If all are full, replace the first one
+                    sourceInput1.value = url;
+                    saveState();
+                    searchModal.style.display = 'none';
+                }
+            }
+        });
+
+        // Close modals if clicking outside the content
+        window.addEventListener('click', (e) => {
+            if (e.target == transcriptModal) {
+                transcriptModal.style.display = 'none';
+            }
+            if (e.target == searchModal) {
+                searchModal.style.display = 'none';
+            }
+        });
+
+        // Load initial state
+        loadState();
     </script>
 </body>
 </html>
