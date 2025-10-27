@@ -1,4 +1,4 @@
-import { YoutubeTranscript } from 'youtube-transcript';
+import YoutubeTranscript from 'youtube-transcript';
 
 // Helper to return a JSON error
 function jsonError(message, status = 500) {
