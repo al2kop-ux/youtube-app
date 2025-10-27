@@ -1,4 +1,4 @@
-const { YoutubeTranscript } = require('youtube-transcript');
+const YoutubeTranscript = require('youtube-transcript');
 
 // Helper to return a JSON error
 function jsonError(message, status = 500) {
@@ -177,4 +177,5 @@ export async function onRequestPost(context) {
         return jsonError(`[Generate Function Error]: ${errorMessage}`, 500);
     }
 }
+
 
