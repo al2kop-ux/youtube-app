@@ -22,25 +22,34 @@ export async function onRequestPost(context) {
 
         const apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&key=${YOUTUBE_API_KEY}&maxResults=10`;
 
-        // --- NEW DEBUG LOG ---
-        // This will print the exact URL to your Cloudflare function logs
-        console.log("Attempting to fetch YouTube API URL:", apiUrl);
-        // --- END DEBUG LOG ---
-
         const response = await fetch(apiUrl);
 
         if (!response.ok) {
-            // Log the error response from Google
-            const errorText = await response.text();
-            console.error("YouTube API Error:", errorText);
-            throw new Error(`YouTube API Error: ${errorText}`);
+            // NEW: Send Google's error message directly to the user
+            let googleError = await response.text();
+            try {
+                // Try to parse it as JSON for a cleaner message
+                const errorJson = JSON.parse(googleError);
+                googleError = errorJson.error.message || googleError;
+            } catch (e) {
+                // It's not JSON, just send the text
+            }
+            // Return the error so the user can see it in the app's error box
+            return jsonError(`YouTube API Error: ${googleError}`, response.status);
         }
 
         const data = await response.json();
         
-        // Log the response data
-        console.log("YouTube API Response:", JSON.stringify(data, null, 2));
-
+        // NEW: Check if the response is successful but has no items.
+        // If so, send the raw response back as an error so we can inspect it.
+        if (!data.items || data.items.length === 0) {
+            // If we get no items, it might be a quota issue or just no results.
+            // Let's send the raw response back as an error message for debugging.
+            const rawResponseText = JSON.stringify(data, null, 2);
+            return jsonError(`No items found. Full API Response: ${rawResponseText}`, 404);
+        }
+        
+        // Success! Send the data back.
         return new Response(JSON.stringify(data), {
             status: 200,
             headers: { 'Content-Type': 'application/json' },
@@ -60,7 +69,6 @@ export async function onRequestPost(context) {
             }
         }
         // Log the final error
-        console.error("[Search Function Error]:", errorMessage);
         return jsonError(`[Search Function Error]: ${errorMessage}`, 500);
     }
 }
