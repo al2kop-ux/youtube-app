@@ -120,7 +120,6 @@
     </div>
 
     <!-- Transcript Modal -->
-    <!-- FIXED: Removed 'flex' class. It should only be applied by '.modal-open' -->
     <div id="transcriptModal" class="modal fixed inset-0 bg-black bg-opacity-75 items-center justify-center p-4">
         <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-2xl">
             <div class="flex justify-between items-center p-4 border-b border-gray-700">
@@ -137,7 +136,6 @@
     </div>
 
     <!-- Search Modal -->
-    <!-- FIXED: Removed 'flex' class. It should only be applied by '.modal-open' -->
     <div id="searchModal" class="modal fixed inset-0 bg-black bg-opacity-75 items-center justify-center p-4">
         <div class="bg-gray-800 rounded-lg shadow-xl w-full max-w-3xl">
             <div class="flex justify-between items-center p-4 border-b border-gray-700">
@@ -216,18 +214,27 @@
             });
 
             if (!response.ok) {
-                let errorMsg = `HTTP error! Status: ${response.status}`;
+                const initialErrorMsg = `Error: ${response.status} ${response.statusText}`;
                 
                 // Clone the response to read it multiple times
                 const resClone = response.clone();
 
+                let errorMsg;
                 try {
                     // Try to parse error as JSON from the clone
                     const errData = await resClone.json(); 
+                    // Use errData.error if it's a non-empty string, otherwise fall back
                     errorMsg = errData.error || JSON.stringify(errData);
                 } catch (e) {
                     // If JSON fails, read the original response as text
-                    errorMsg = await response.text();
+                    try {
+                        const textError = await response.text();
+                        // Use textError if it's a non-empty string, otherwise fall back
+                        errorMsg = textError || initialErrorMsg;
+                    } catch (textErr) {
+                        // If all fails, just use the status
+                        errorMsg = initialErrorMsg;
+                    }
                 }
                 throw new Error(errorMsg);
             }
