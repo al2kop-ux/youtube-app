@@ -22,15 +22,25 @@ export async function onRequestPost(context) {
 
         const apiUrl = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&type=video&key=${YOUTUBE_API_KEY}&maxResults=10`;
 
+        // --- NEW DEBUG LOG ---
+        // This will print the exact URL to your Cloudflare function logs
+        console.log("Attempting to fetch YouTube API URL:", apiUrl);
+        // --- END DEBUG LOG ---
+
         const response = await fetch(apiUrl);
 
         if (!response.ok) {
+            // Log the error response from Google
             const errorText = await response.text();
+            console.error("YouTube API Error:", errorText);
             throw new Error(`YouTube API Error: ${errorText}`);
         }
 
         const data = await response.json();
         
+        // Log the response data
+        console.log("YouTube API Response:", JSON.stringify(data, null, 2));
+
         return new Response(JSON.stringify(data), {
             status: 200,
             headers: { 'Content-Type': 'application/json' },
@@ -49,6 +59,8 @@ export async function onRequestPost(context) {
                 errorMessage = "An un-stringifiable error object was caught.";
             }
         }
+        // Log the final error
+        console.error("[Search Function Error]:", errorMessage);
         return jsonError(`[Search Function Error]: ${errorMessage}`, 500);
     }
 }
