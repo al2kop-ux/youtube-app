@@ -1,48 +1,55 @@
-const { YoutubeTranscript } = require('youtube-transcript');
+import { YoutubeTranscript } from 'youtube-transcript';
 
-exports.handler = async (event) => {
-    // Top-level try...catch to ensure a JSON response is always sent
-    try {
-        const { url } = JSON.parse(event.body);
-        if (!url) {
-            return {
-                statusCode: 400,
-                body: JSON.stringify({ error: 'Missing URL parameter' })
-            };
-        }
+// Helper to return a JSON error
+function jsonError(message, status = 500) {
+    return new Response(JSON.stringify({ error: message }), {
+        status: status,
+        headers: { 'Content-Type': 'application/json' }
+    });
+}
 
-        // Use the simple fetch method
-        const transcriptItems = await YoutubeTranscript.fetch(url);
-
-        if (!transcriptItems || transcriptItems.length === 0) {
-            throw new Error('No transcript found or transcript is empty.');
-        }
-
-        // Join the text
-        const transcript = transcriptItems.map(item => item.text).join(' ');
-
-        return {
-            statusCode: 200,
-            body: JSON.stringify({ transcript: transcript })
-        };
-
-    } catch (error) {
-        let errorMessage = "An unknown error occurred";
-        if (error instanceof Error) {
-            errorMessage = error.message;
-        } else if (typeof error === 'string') {
-            errorMessage = error;
-        } else {
-            try {
-                errorMessage = JSON.stringify(error);
-            } catch (e) {
-                errorMessage = "An un-stringifiable error object was caught.";
-            }
-        }
-
-        return {
-            statusCode: 500,
-            body: JSON.stringify({ error: `[Transcript Function Error]: ${errorMessage}` })
-        };
+// Cloudflare's generic 'onRequest' handler
+export async function onRequest(context) {
+    // 1. Check for POST method
+    if (context.request.method !== 'POST') {
+        return new Response('Method Not Allowed', { status: 405 });
     }
-};
+
+    // 2. Safely parse the request body
+    let body;
+    try {
+        body = await context.request.json();
+    } catch (e) {
+        return jsonError('Invalid JSON body', 400);
+    }
+
+    const { url } = body;
+    if (!url) {
+        return jsonError('URL is required', 400);
+    }
+
+    // 3. Fetch the transcript
+    try {
+        const transcriptItems = await YoutubeTranscript.fetch(url);
+        const transcript = transcriptItems.map(item => item.text).join(' ');
+        
+        // 4. Return the successful response
+        return new Response(JSON.stringify({ transcript: transcript }), {
+            headers: { 'Content-Type': 'application/json' }
+        });
+    } catch (error) {
+        let errorMessage = "Could not fetch transcript.";
+        if (error.message) {
+            errorMessage = error.message;
+        }
+        // Check for common youtube-transcript errors
+        if (errorMessage.includes("disabled")) {
+            errorMessage = "Transcripts are disabled for this video.";
+        }
+        if (errorMessage.includes("no transcript")) {
+             errorMessage = "No transcript found for this video.";
+        }
+        return jsonError(errorMessage, 500);
+    }
+}
+
